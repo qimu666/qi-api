@@ -5,9 +5,10 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * 更新请求
- *
- * @TableName product
+ * @Author: QiMu
+ * @Date: 2023/08/25 02:50:48
+ * @Version: 1.0
+ * @Description: 更新请求
  */
 @Data
 public class InterfaceInfoUpdateRequest implements Serializable {
@@ -26,6 +27,10 @@ public class InterfaceInfoUpdateRequest implements Serializable {
      * 请求方法
      */
     private String method;
+    /**
+     * 金额(分),调用接口扣费金额
+     */
+    private Integer total;
     /**
      * 接口请求参数
      */

@@ -2,15 +2,18 @@ package com.qimu.qiapibackend.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
 /**
- * wxpay pay properties.
- *
- * @author Binary Wang
+ * @Author: QiMu
+ * @Date: 2023/08/24 10:02:46
+ * @Version: 1.0
+ * @Description: wx支付帐户配置
  */
 @Data
+@Component
 @ConfigurationProperties(prefix = "wx.pay")
-public class WxPayProperties {
+public class WxPayAccountConfig {
     /**
      * 设置微信公众号或者小程序等的appid
      */

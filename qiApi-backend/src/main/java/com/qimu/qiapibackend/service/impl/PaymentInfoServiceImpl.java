@@ -7,6 +7,7 @@ import com.qimu.qiapibackend.mapper.PaymentInfoMapper;
 import com.qimu.qiapibackend.model.entity.PaymentInfo;
 import com.qimu.qiapibackend.model.vo.PaymentInfoVo;
 import com.qimu.qiapibackend.service.PaymentInfoService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 /**
@@ -33,7 +34,9 @@ public class PaymentInfoServiceImpl extends ServiceImpl<PaymentInfoMapper, Payme
         paymentInfo.setTransactionId(transactionId);
         paymentInfo.setTradeType(tradeType);
         paymentInfo.setTradeState(tradeState);
-        paymentInfo.setSuccessTime(successTime);
+        if (StringUtils.isNotBlank(successTime)) {
+            paymentInfo.setSuccessTime(successTime);
+        }
         paymentInfo.setOpenid(payer.getOpenid());
         paymentInfo.setPayerTotal(amount.getPayerTotal());
         paymentInfo.setCurrency(amount.getCurrency());

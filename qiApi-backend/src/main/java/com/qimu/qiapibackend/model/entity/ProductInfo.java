@@ -7,13 +7,14 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
- * 用户
- *
- * @TableName user
+ * @Author: QiMu
+ * @Date: 2023/08/25 02:54:05
+ * @Version: 1.0
+ * @Description: 产品信息
  */
-@TableName(value = "user")
+@TableName(value = "product_info")
 @Data
-public class User implements Serializable {
+public class ProductInfo implements Serializable {
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
     /**
@@ -22,41 +23,33 @@ public class User implements Serializable {
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     /**
-     * 用户昵称
+     * 产品名称
      */
-    private String userName;
+    private String name;
     /**
-     * 账号
+     * 增加积分个数
      */
-    private String userAccount;
+    private Integer addPoints;
     /**
-     * 访问密钥
+     * 产品描述
      */
-    private String accessKey;
+    private String description;
     /**
-     * 钱包余额（分）
+     * 创建人
      */
-    private Integer balance;
+    private Long userId;
     /**
-     * 秘密密钥
+     * 金额(分)
      */
-    private String secretKey;
+    private Integer total;
     /**
-     * 用户头像
+     * 产品类型（VIP-会员 RECHARGE-充值）
      */
-    private String userAvatar;
+    private String productType;
     /**
-     * 性别
+     * 过期时间
      */
-    private Integer gender;
-    /**
-     * 用户角色: user, admin
-     */
-    private String userRole;
-    /**
-     * 密码
-     */
-    private String userPassword;
+    private Date expirationTime;
     /**
      * 创建时间
      */

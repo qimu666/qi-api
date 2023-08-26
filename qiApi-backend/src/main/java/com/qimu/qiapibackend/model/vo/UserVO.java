@@ -21,6 +21,12 @@ public class UserVO implements Serializable {
      * 用户昵称
      */
     private String userName;
+
+    /**
+     * 钱包余额（分）
+     */
+    private Integer balance;
+
     /**
      * 账号
      */

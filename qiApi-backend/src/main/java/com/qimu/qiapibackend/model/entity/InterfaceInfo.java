@@ -30,6 +30,11 @@ public class InterfaceInfo implements Serializable {
      * 接口地址
      */
     private String url;
+
+    /**
+     * 金额(分),调用接口扣费金额
+     */
+    private Integer total;
     /**
      * 发布人
      */

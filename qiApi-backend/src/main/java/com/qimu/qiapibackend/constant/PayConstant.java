@@ -17,6 +17,9 @@ public interface PayConstant {
      */
     String ORDER_PREFIX = "order_";
 
+    /**
+     * 查询订单信息
+     */
     String QUERY_ORDER_INFO = "query:orderInfo:";
 
 }

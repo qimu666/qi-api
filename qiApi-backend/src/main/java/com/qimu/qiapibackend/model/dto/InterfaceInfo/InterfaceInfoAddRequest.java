@@ -18,6 +18,10 @@ public class InterfaceInfoAddRequest implements Serializable {
      */
     private String name;
     /**
+     * 金额(分),调用接口扣费金额
+     */
+    private Integer total;
+    /**
      * 接口地址
      */
     private String url;

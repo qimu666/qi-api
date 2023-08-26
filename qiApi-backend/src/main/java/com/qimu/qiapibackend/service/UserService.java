@@ -79,4 +79,6 @@ public interface UserService extends IService<User> {
      * @return {@link UserVO}
      */
     UserVO updateVoucher(User loginUser);
+
+    boolean updateWalletBalance(Long userId, Integer addPoints);
 }

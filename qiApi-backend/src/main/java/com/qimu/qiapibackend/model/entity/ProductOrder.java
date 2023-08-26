@@ -10,45 +10,50 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
- * @Author: QiMu
- * @Date: 2023/08/24 11:20:58
- * @Version: 1.0
- * @Description: 接口订单
+ * 商品订单
+ *
+ * @TableName product_order
  */
-@TableName(value = "interface_order")
+@TableName(value = "product_order")
 @Data
-public class InterfaceOrder implements Serializable {
-    @TableField(exist = false)
-    private static final long serialVersionUID = 1L;
+public class ProductOrder implements Serializable {
     /**
      * id
      */
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
+
+    @TableField(exist = false)
+    private static final long serialVersionUID = 1L;
     /**
-     * 订单号
+     * 商品信息
      */
-    private String orderNo;
+    private String productInfo;
+
     /**
      * 二维码地址
      */
     private String codeUrl;
+
     /**
      * 创建人
      */
     private Long userId;
     /**
-     * 接口id
+     * 微信订单号/支付宝订单id
      */
-    private Long interfaceId;
+    private String orderNo;
+
     /**
      * 商品名称
      */
     private String orderName;
+
     /**
      * 金额(分)
      */
     private Integer total;
+
     /**
      * 接口订单状态(SUCCESS：支付成功
      * REFUND：转入退款
@@ -59,20 +64,36 @@ public class InterfaceOrder implements Serializable {
      * PAYERROR：支付失败（仅付款码支付会返回）)
      */
     private String status;
+
     /**
      * 支付方式（默认 WX- 微信 ZFB- 支付宝）
      */
     private String payType;
+
     /**
      * 过期时间
      */
     private Date expirationTime;
+
     /**
      * 创建时间
      */
     private Date createTime;
+
     /**
      * 更新时间
      */
     private Date updateTime;
+    /**
+     * 商品id
+     */
+    private Long productId;
+    /**
+     * 增加积分个数
+     */
+    private Integer addPoints;
+    /**
+     * 支付宝订单体
+     */
+    private String formData;
 }

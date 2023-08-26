@@ -1,4 +1,4 @@
-package com.qimu.qiapibackend.model.dto.InterfaceOrder;
+package com.qimu.qiapibackend.model.dto.ProductOrder;
 
 import lombok.Data;
 
@@ -11,12 +11,23 @@ import java.io.Serializable;
  * @Description: 创建请求
  */
 @Data
-public class InterfaceOrderQueryRequest implements Serializable {
+public class ProductOrderAddRequest implements Serializable {
 
     private static final long serialVersionUID = 1L;
+
+    /**
+     * 接口id
+     */
+    private String productId;
+
+    /**
+     * 支付类型
+     */
+    private String payType;
 
     /**
      * 订单号
      */
     private String orderNo;
+
 }

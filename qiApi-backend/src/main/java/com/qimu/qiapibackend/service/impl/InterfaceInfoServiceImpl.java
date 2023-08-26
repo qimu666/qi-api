@@ -15,8 +15,7 @@ import org.springframework.stereotype.Service;
  * @createDate 2023-08-11 13:14:10
  */
 @Service
-public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, InterfaceInfo>
-        implements InterfaceInfoService {
+public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, InterfaceInfo> implements InterfaceInfoService {
     @Override
     public void validInterfaceInfo(InterfaceInfo interfaceInfo, boolean add) {
         if (interfaceInfo == null) {
@@ -25,6 +24,7 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         String name = interfaceInfo.getName();
         String url = interfaceInfo.getUrl();
         Long userId = interfaceInfo.getUserId();
+        Integer total = interfaceInfo.getTotal();
         String method = interfaceInfo.getMethod();
         String requestParams = interfaceInfo.getRequestParams();
         String description = interfaceInfo.getDescription();
@@ -32,12 +32,14 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         String requestHeader = interfaceInfo.getRequestHeader();
         String responseHeader = interfaceInfo.getResponseHeader();
         Integer status = interfaceInfo.getStatus();
-
         // 创建时，所有参数必须非空
         if (add) {
             if (StringUtils.isAnyBlank(name, url, method)) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR);
             }
+        }
+        if (total < 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "金额不能为负数");
         }
     }
 }
