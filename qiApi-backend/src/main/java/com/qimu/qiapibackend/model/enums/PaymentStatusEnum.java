@@ -37,7 +37,17 @@ public enum PaymentStatusEnum {
     /**
      * 转入退款
      */
-    REFUND("转入退款", "REFUND");
+    REFUND("转入退款", "REFUND"),
+    /**
+     * 撤销
+     */
+    REVOKED("已撤销（刷卡支付）", "REVOKED"),
+
+    /**
+     * 未知
+     */
+    UNKNOW("未知状态", "UNKNOW");
+
 
     private final String text;
 

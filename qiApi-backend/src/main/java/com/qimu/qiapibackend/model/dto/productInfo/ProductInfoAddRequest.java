@@ -32,6 +32,11 @@ public class ProductInfoAddRequest implements Serializable {
     private Integer total;
 
     /**
+     * 增加积分个数
+     */
+    private Integer addPoints;
+
+    /**
      * 产品类型（VIP-会员 RECHARGE-充值）
      */
     private String productType;

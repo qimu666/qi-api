@@ -1,13 +1,11 @@
 package com.qimu.qiapibackend.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.github.binarywang.wxpay.exception.WxPayException;
 import com.qimu.qiapibackend.model.entity.ProductOrder;
 import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.vo.ProductOrderVo;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.List;
 
 /**
  * @Author: QiMu
@@ -51,7 +49,7 @@ public interface ProductOrderService extends IService<ProductOrder> {
      *
      * @param outTradeNo  订单号
      * @param orderStatus 订单状态
-     * @return
+     * @return boolean
      */
     boolean updateOrderStatusByOrderNo(String outTradeNo, String orderStatus);
 
@@ -66,22 +64,12 @@ public interface ProductOrderService extends IService<ProductOrder> {
     ProductOrder getProductOrderByOutTradeNo(String outTradeNo);
 
     /**
-     * 按持续时间获得未支付订单
-     *
-     * @param minutes 分钟
-     * @param remove  是否是删除
-     * @return {@link List}<{@link ProductOrder}>
-     */
-    List<ProductOrder> getNoPayOrderByDuration(int minutes, Boolean remove);
-
-    /**
-     * 检查订单状态
+     * 处理超时订单
      * 检查订单状态(微信查单接口)
      *
      * @param productOrder 产品订单
-     * @throws WxPayException wx支付例外
      */
-    void checkOrderStatus(ProductOrder productOrder) throws WxPayException;
+    void processingTimedOutOrders(ProductOrder productOrder);
 
 
     /**

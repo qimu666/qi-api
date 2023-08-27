@@ -22,4 +22,13 @@ public interface PayConstant {
      */
     String QUERY_ORDER_INFO = "query:orderInfo:";
 
+    /**
+     * 支付宝响应代码表示成功
+     */
+    String RESPONSE_CODE_SUCCESS = "10000";
+
+    /**
+     * 商户签约的产品支持退款功能的前提下，买家付款成功；
+     */
+    String TRADE_SUCCESS = "TRADE_SUCCESS";
 }

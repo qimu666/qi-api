@@ -39,10 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Date;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.qimu.qiapibackend.constant.PayConstant.ORDER_PREFIX;
@@ -125,9 +122,6 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
 
         synchronized (loginUser.getUserAccount().intern()) {
             boolean saveResult = this.save(productOrder);
-            if (!saveResult) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR);
-            }
 
             // 构建支付请求
             WxPayUnifiedOrderV3Request wxPayRequest = new WxPayUnifiedOrderV3Request();
@@ -139,17 +133,15 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
             String format = DateUtil.format(expirationTime, "yyyy-MM-dd'T'HH:mm:ssXXX");
             wxPayRequest.setTimeExpire(format);
             wxPayRequest.setOutTradeNo(productOrder.getOrderNo());
-
-            String codeUrl = null;
             try {
-                codeUrl = wxPayService.createOrderV3(TradeTypeEnum.NATIVE, wxPayRequest);
+                String codeUrl = wxPayService.createOrderV3(TradeTypeEnum.NATIVE, wxPayRequest);
                 if (StringUtils.isBlank(codeUrl)) {
                     throw new BusinessException(ErrorCode.OPERATION_ERROR);
                 }
                 productOrder.setCodeUrl(codeUrl);
                 // 更新微信订单的二维码,不用重复创建
                 boolean updateResult = this.updateProductOrder(productOrder);
-                if (!updateResult) {
+                if (!updateResult & !saveResult) {
                     throw new BusinessException(ErrorCode.OPERATION_ERROR);
                 }
             } catch (WxPayException e) {
@@ -193,51 +185,35 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
         return productOrder;
     }
 
-    /**
-     * 查找超过minutes分钟并且未支付的的订单
-     *
-     * @param minutes 分钟
-     * @return {@link List}<{@link ProductOrder}>
-     */
     @Override
-    public List<ProductOrder> getNoPayOrderByDuration(int minutes, Boolean remove) {
-        Instant instant = Instant.now().minus(Duration.ofMinutes(minutes));
-        LambdaQueryWrapper<ProductOrder> productOrderLambdaQueryWrapper = new LambdaQueryWrapper<>();
-        productOrderLambdaQueryWrapper.eq(ProductOrder::getStatus, NOTPAY.getValue());
-        // 大于5分钟表示删除
-        if (remove) {
-            productOrderLambdaQueryWrapper.or().eq(ProductOrder::getStatus, CLOSED.getValue());
-
-        }
-        productOrderLambdaQueryWrapper.and(p -> p.le(ProductOrder::getCreateTime, instant));
-        return this.list(productOrderLambdaQueryWrapper);
-    }
-
-    @Override
-    public void checkOrderStatus(ProductOrder productOrder) throws WxPayException {
+    public void processingTimedOutOrders(ProductOrder productOrder) {
         String orderNo = productOrder.getOrderNo();
         WxPayOrderQueryV3Request wxPayOrderQueryV3Request = new WxPayOrderQueryV3Request();
         wxPayOrderQueryV3Request.setOutTradeNo(orderNo);
-        WxPayOrderQueryV3Result wxPayOrderQueryV3Result = wxPayService.queryOrderV3(wxPayOrderQueryV3Request);
-
-        String tradeState = wxPayOrderQueryV3Result.getTradeState();
-        // 订单已支付
-        if (tradeState.equals(SUCCESS.getValue())) {
-            this.updateOrderStatusByOrderNo(orderNo, SUCCESS.getValue());
-            PaymentInfoVo paymentInfoVo = new PaymentInfoVo();
-            BeanUtils.copyProperties(wxPayOrderQueryV3Result, paymentInfoVo);
-            // 用户余额补发
-            userService.updateWalletBalance(productOrder.getUserId(), productOrder.getAddPoints());
-            // 创建支付记录
-            paymentInfoService.createPaymentInfo(paymentInfoVo);
-            log.info("超时订单{},状态已更新", orderNo);
+        WxPayOrderQueryV3Result wxPayOrderQueryV3Result = null;
+        try {
+            wxPayOrderQueryV3Result = wxPayService.queryOrderV3(wxPayOrderQueryV3Request);
+            String tradeState = wxPayOrderQueryV3Result.getTradeState();
+            // 订单已支付
+            if (tradeState.equals(SUCCESS.getValue())) {
+                this.updateOrderStatusByOrderNo(orderNo, SUCCESS.getValue());
+                // 用户余额补发
+                userService.updateWalletBalance(productOrder.getUserId(), productOrder.getAddPoints());
+                // 创建支付记录
+                PaymentInfoVo paymentInfoVo = new PaymentInfoVo();
+                BeanUtils.copyProperties(wxPayOrderQueryV3Result, paymentInfoVo);
+                paymentInfoService.createPaymentInfo(paymentInfoVo);
+                log.info("超时订单{},状态已更新", orderNo);
+            }
+            if (tradeState.equals(NOTPAY.getValue())) {
+                wxPayService.closeOrderV3(orderNo);
+                this.updateOrderStatusByOrderNo(orderNo, CLOSED.getValue());
+                log.info("超时订单{},订单已关闭", orderNo);
+            }
+            redisTemplate.delete(QUERY_ORDER_STATUS + orderNo);
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
         }
-        if (tradeState.equals(NOTPAY.getValue())) {
-            wxPayService.closeOrderV3(orderNo);
-            this.updateOrderStatusByOrderNo(orderNo, CLOSED.getValue());
-            log.info("超时订单{},订单已关闭", orderNo);
-        }
-        redisTemplate.delete(QUERY_ORDER_STATUS + orderNo);
     }
 
     @Override

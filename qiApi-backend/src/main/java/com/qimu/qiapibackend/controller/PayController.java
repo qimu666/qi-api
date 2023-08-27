@@ -16,7 +16,6 @@ import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -43,10 +42,8 @@ import static com.qimu.qiapibackend.model.enums.PaymentStatusEnum.SUCCESS;
 public class PayController {
     @Resource
     private UserService userService;
-
     @Resource
-    @Qualifier("WX")
-    ProductOrderService productOrderService;
+    private ProductOrderService productOrderService;
     @Resource
     private OrderService orderService;
     @Resource
@@ -71,9 +68,6 @@ public class PayController {
         }
         User loginUser = userService.getLoginUser(request);
         ProductOrderVo productOrderVo = orderService.createOrderByPayType(productId, payType, loginUser);
-        if (productOrderVo == null) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "订单创建失败");
-        }
         return ResultUtils.success(productOrderVo);
     }
 

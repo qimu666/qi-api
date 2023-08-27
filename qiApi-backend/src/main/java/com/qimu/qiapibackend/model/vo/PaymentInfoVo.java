@@ -23,6 +23,9 @@ public class PaymentInfoVo {
 
     private String transactionId;
 
+    /**
+     * 贸易类型
+     */
     private String tradeType;
 
     private String tradeState;

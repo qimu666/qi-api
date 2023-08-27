@@ -40,8 +40,8 @@ public class ProductInfoServiceImpl extends ServiceImpl<ProductInfoMapper, Produ
         if (addPoints <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "最少增加1余额");
         }
-        if (total < 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "金额不能为负数");
+        if (total < 1) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "金额不能小于1分");
         }
     }
 }

@@ -1,9 +1,11 @@
 package com.qimu.qiapibackend.service;
 
+import com.qimu.qiapibackend.model.entity.ProductOrder;
 import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.vo.ProductOrderVo;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * @Author: QiMu
@@ -39,4 +41,14 @@ public interface OrderService {
      */
     ProductOrderVo createOrderByPayType(Long productId, String payType, User loginUser);
 
+    /**
+     * 按持续时间获得无支付指令
+     * 按持续时间获得未支付订单
+     *
+     * @param minutes 分钟
+     * @param remove  是否是删除
+     * @param payType 付款类型
+     * @return {@link List}<{@link ProductOrder}>
+     */
+    List<ProductOrder> getNoPayOrderByDuration(int minutes, Boolean remove, String payType);
 }

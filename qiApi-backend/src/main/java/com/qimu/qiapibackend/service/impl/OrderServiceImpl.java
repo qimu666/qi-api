@@ -1,19 +1,24 @@
 package com.qimu.qiapibackend.service.impl;
 
-import com.github.binarywang.wxpay.service.WxPayService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.qimu.qiapibackend.common.ErrorCode;
 import com.qimu.qiapibackend.exception.BusinessException;
+import com.qimu.qiapibackend.model.entity.ProductOrder;
 import com.qimu.qiapibackend.model.entity.User;
+import com.qimu.qiapibackend.model.enums.PaymentStatusEnum;
 import com.qimu.qiapibackend.model.vo.ProductOrderVo;
 import com.qimu.qiapibackend.service.OrderService;
 import com.qimu.qiapibackend.service.ProductOrderService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 import static com.qimu.qiapibackend.model.enums.PayTypeStatusEnum.ALIPAY;
@@ -30,7 +35,7 @@ import static com.qimu.qiapibackend.model.enums.PayTypeStatusEnum.WX;
 public class OrderServiceImpl implements OrderService {
 
     @Resource
-    private WxPayService wxPayService;
+    private ProductOrderService productOrderService;
 
     @Resource
     private List<ProductOrderService> productOrderServices;
@@ -68,6 +73,27 @@ public class OrderServiceImpl implements OrderService {
 
     }
 
+    /**
+     * 查找超过minutes分钟并且未支付的的订单
+     *
+     * @param minutes 分钟
+     * @return {@link List}<{@link ProductOrder}>
+     */
+    @Override
+    public List<ProductOrder> getNoPayOrderByDuration(int minutes, Boolean remove, String payType) {
+        Instant instant = Instant.now().minus(Duration.ofMinutes(minutes));
+        LambdaQueryWrapper<ProductOrder> productOrderLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        productOrderLambdaQueryWrapper.eq(ProductOrder::getStatus, PaymentStatusEnum.NOTPAY.getValue());
+        if (StringUtils.isNotBlank(payType)) {
+            productOrderLambdaQueryWrapper.eq(ProductOrder::getPayType, payType);
+        }
+        // 大于5分钟表示删除
+        if (remove) {
+            productOrderLambdaQueryWrapper.or().eq(ProductOrder::getStatus, PaymentStatusEnum.CLOSED.getValue());
+        }
+        productOrderLambdaQueryWrapper.and(p -> p.le(ProductOrder::getCreateTime, instant));
+        return productOrderService.list(productOrderLambdaQueryWrapper);
+    }
 
     /**
      * 做订单通知

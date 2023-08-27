@@ -14,7 +14,7 @@ create table if not exists user
     accessKey    varchar(256)                           null comment 'accessKey',
     secretKey    varchar(256)                           null comment 'secretKey',
     gender       tinyint                                null comment '性别',
-    balance      bigint       default 30                not null comment '钱包余额 注册赠送30币',
+    balance      bigint       default 100               not null comment '钱包余额 注册赠送100币',
     userRole     varchar(256) default 'user'            not null comment '用户角色：user / admin',
     userPassword varchar(512)                           not null comment '密码',
     createTime   datetime     default CURRENT_TIMESTAMP not null comment '创建时间',

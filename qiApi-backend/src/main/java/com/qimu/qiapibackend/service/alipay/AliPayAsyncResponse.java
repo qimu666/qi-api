@@ -50,16 +50,6 @@ public class AliPayAsyncResponse implements Serializable {
     private String version;
 
     /**
-     * 签名类型
-     */
-    private String signType;
-
-    /**
-     * 签名
-     */
-    private String sign;
-
-    /**
      * 授权方的app_id
      */
     private String authAppId;
@@ -113,14 +103,4 @@ public class AliPayAsyncResponse implements Serializable {
      * 交易创建时间
      */
     private String gmtCreate;
-
-    /**
-     * 交易结束时间
-     */
-    private String gmtClose;
-
-    /**
-     * 附加/回传参数
-     */
-    private String passbackParams;
 }

@@ -1,15 +1,16 @@
 package com.qimu.qiapibackend.job;
 
 import com.qimu.qiapibackend.model.entity.ProductOrder;
+import com.qimu.qiapibackend.service.OrderService;
 import com.qimu.qiapibackend.service.ProductOrderService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.List;
 
+import static com.qimu.qiapibackend.model.enums.PayTypeStatusEnum.ALIPAY;
 import static com.qimu.qiapibackend.model.enums.PayTypeStatusEnum.WX;
 
 /**
@@ -22,27 +23,44 @@ import static com.qimu.qiapibackend.model.enums.PayTypeStatusEnum.WX;
 @Component
 public class PayJob {
     @Resource
-    @Qualifier("WX")
     private ProductOrderService productOrderService;
+    @Resource
+    private OrderService orderService;
 
     /**
-     * 订单确认
+     * 微信订单确认
      * 每30s查询一次超过5分钟过期的订单,并且未支付
      */
     @Scheduled(cron = "0/30 * * * * ?")
-    public void orderConfirm() {
-        List<ProductOrder> orderList = productOrderService.getNoPayOrderByDuration(5, false);
+    public void wxOrderConfirm() {
+        List<ProductOrder> orderList = orderService.getNoPayOrderByDuration(5, false, WX.getValue());
+        ProductOrderService productOrderService = orderService.getProductOrderServiceByPayType(WX.getValue());
         for (ProductOrder productOrder : orderList) {
             String orderNo = productOrder.getOrderNo();
-            String payType = productOrder.getPayType();
             try {
-                if (payType.equals(WX.getValue())) {
-                    productOrderService.checkOrderStatus(productOrder);
-                } else {
-                    break;
-                }
+                productOrderService.processingTimedOutOrders(productOrder);
             } catch (Exception e) {
-                log.error("超时订单,{},确认异常：{}", orderNo, e.getMessage());
+                log.error("微信超时订单,{},确认异常：{}", orderNo, e.getMessage());
+                break;
+            }
+        }
+    }
+
+    /**
+     * 支付宝订单确认
+     * 每40s查询一次超过5分钟过期的订单,并且未支付
+     */
+    @Scheduled(cron = "0/40 * * * * ?")
+    public void aliPayOrderConfirm() {
+        List<ProductOrder> orderList = orderService.getNoPayOrderByDuration(5, false, ALIPAY.getValue());
+        ProductOrderService productOrderService = orderService.getProductOrderServiceByPayType(ALIPAY.getValue());
+        for (ProductOrder productOrder : orderList) {
+            String orderNo = productOrder.getOrderNo();
+            try {
+                productOrderService.processingTimedOutOrders(productOrder);
+            } catch (Exception e) {
+                log.error("支付宝超时订单,{},确认异常：{}", orderNo, e.getMessage());
+                break;
             }
         }
     }
@@ -53,7 +71,7 @@ public class PayJob {
      */
     @Scheduled(cron = "* * 2 * * ?")
     public void clearOverdueOrders() {
-        List<ProductOrder> orderList = productOrderService.getNoPayOrderByDuration(15 * 24 * 60, true);
+        List<ProductOrder> orderList = orderService.getNoPayOrderByDuration(15 * 24 * 60, true, "");
         boolean removeResult = productOrderService.removeBatchByIds(orderList);
         if (removeResult) {
             log.info("清除成功");

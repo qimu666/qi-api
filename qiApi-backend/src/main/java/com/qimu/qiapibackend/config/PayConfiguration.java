@@ -3,10 +3,9 @@ package com.qimu.qiapibackend.config;
 import com.github.binarywang.wxpay.config.WxPayConfig;
 import com.github.binarywang.wxpay.service.WxPayService;
 import com.github.binarywang.wxpay.service.impl.WxPayServiceImpl;
-import com.lly835.bestpay.config.AliPayConfig;
-import com.qimu.qiapibackend.service.alipay.BestPayServiceImpl;
+import com.ijpay.alipay.AliPayApiConfig;
+import com.ijpay.alipay.AliPayApiConfigKit;
 import lombok.AllArgsConstructor;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -47,17 +46,16 @@ public class PayConfiguration {
     }
 
     @Bean
-    public BestPayServiceImpl bestPayService() {
-        AliPayConfig aliPayConfig = new AliPayConfig();
-        aliPayConfig.setNotifyUrl(aliPayAccountConfig.getNotifyUrl());
-        aliPayConfig.setAppId(aliPayAccountConfig.getAppId());
-        aliPayConfig.setPrivateKey(aliPayAccountConfig.getPrivateKey());
-        aliPayConfig.setAliPayPublicKey(aliPayAccountConfig.getAliPayPublicKey());
-        aliPayConfig.setSandbox(ObjectUtils.isNotEmpty(aliPayAccountConfig.getSandbox()));
-        aliPayConfig.setReturnUrl(aliPayAccountConfig.getReturnUrl());
-
-        BestPayServiceImpl bestPayService = new BestPayServiceImpl();
-        bestPayService.setAliPayConfig(aliPayConfig);
-        return bestPayService;
+    public void aliPayApi() {
+        AliPayApiConfig aliPayApiConfig = AliPayApiConfig.builder()
+                .setAppId(aliPayAccountConfig.getAppId())
+                .setAliPayPublicKey(aliPayAccountConfig.getAliPayPublicKey())
+                .setCharset("UTF-8")
+                .setPrivateKey(aliPayAccountConfig.getPrivateKey())
+                .setServiceUrl("https://openapi.alipay.com/gateway.do")
+                .setSignType("RSA2")
+                .setCertModel(false)
+                .build(); // 普通公钥方式
+        AliPayApiConfigKit.setThreadLocalAliPayApiConfig(aliPayApiConfig);
     }
 }
