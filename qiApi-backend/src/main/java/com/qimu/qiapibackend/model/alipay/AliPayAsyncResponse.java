@@ -1,4 +1,4 @@
-package com.qimu.qiapibackend.service.alipay;
+package com.qimu.qiapibackend.model.alipay;
 
 import lombok.Data;
 

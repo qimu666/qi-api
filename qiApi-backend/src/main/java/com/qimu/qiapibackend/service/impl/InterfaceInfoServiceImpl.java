@@ -38,9 +38,6 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
                 throw new BusinessException(ErrorCode.PARAMS_ERROR);
             }
         }
-        if (total < 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "金额不能为负数");
-        }
     }
 }
 

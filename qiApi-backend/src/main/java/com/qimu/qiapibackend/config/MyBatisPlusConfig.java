@@ -13,13 +13,14 @@ import org.springframework.context.annotation.Configuration;
  * @author qimu
  */
 @Configuration
-@MapperScan("com.qimu.qiApibackend.mapper")
+@MapperScan("com.qimu.qiapibackend.mapper")
 public class MyBatisPlusConfig {
 
     /**
+     * MyBatis Plus拦截器
      * 拦截器配置
      *
-     * @return
+     * @return {@link MybatisPlusInterceptor}
      */
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {

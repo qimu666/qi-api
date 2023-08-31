@@ -15,7 +15,6 @@ import com.qimu.qiapibackend.model.vo.ImageVo;
 import com.qimu.qiapibackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -42,8 +41,7 @@ public class FileController {
     private UserService userService;
     @Resource
     private CosManager cosManager;
-    @Resource
-    private RedisTemplate<String, Object> redisTemplate;
+
 
     /**
      * 上传文件
@@ -56,7 +54,6 @@ public class FileController {
     @PostMapping("/upload")
     public BaseResponse<ImageVo> uploadFile(@RequestPart("file") MultipartFile multipartFile, UploadFileRequest uploadFileRequest, HttpServletRequest request) {
         String biz = uploadFileRequest.getBiz();
-        System.err.println(multipartFile);
         FileUploadBizEnum fileUploadBizEnum = FileUploadBizEnum.getEnumByValue(biz);
         ImageVo imageVo = new ImageVo();
         if (fileUploadBizEnum == null) {

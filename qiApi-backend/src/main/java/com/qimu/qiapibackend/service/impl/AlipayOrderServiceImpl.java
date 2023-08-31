@@ -22,6 +22,7 @@ import com.qimu.qiapibackend.common.ErrorCode;
 import com.qimu.qiapibackend.config.AliPayAccountConfig;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.mapper.ProductOrderMapper;
+import com.qimu.qiapibackend.model.alipay.AliPayAsyncResponse;
 import com.qimu.qiapibackend.model.entity.ProductInfo;
 import com.qimu.qiapibackend.model.entity.ProductOrder;
 import com.qimu.qiapibackend.model.entity.User;
@@ -32,7 +33,6 @@ import com.qimu.qiapibackend.model.vo.ProductOrderVo;
 import com.qimu.qiapibackend.service.PaymentInfoService;
 import com.qimu.qiapibackend.service.ProductOrderService;
 import com.qimu.qiapibackend.service.UserService;
-import com.qimu.qiapibackend.service.alipay.AliPayAsyncResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RLock;
@@ -122,6 +122,7 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
 
         synchronized (loginUser.getUserAccount().intern()) {
             boolean saveResult = this.save(productOrder);
+
             AlipayTradePagePayModel model = new AlipayTradePagePayModel();
             model.setOutTradeNo(orderNo);
             model.setSubject(productInfo.getName());

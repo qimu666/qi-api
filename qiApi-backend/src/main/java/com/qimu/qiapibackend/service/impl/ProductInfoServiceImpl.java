@@ -37,11 +37,11 @@ public class ProductInfoServiceImpl extends ServiceImpl<ProductInfoMapper, Produ
                 throw new BusinessException(ErrorCode.PARAMS_ERROR);
             }
         }
-        if (addPoints <= 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "最少增加1余额");
+        if (addPoints < 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "增加积分不能为负数");
         }
-        if (total < 1) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "金额不能小于1分");
+        if (total < 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "售卖金额不能为负数");
         }
     }
 }

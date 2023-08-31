@@ -208,7 +208,8 @@ public class ProductInfoController {
                 .or()
                 .like(StringUtils.isNotBlank(description), "description", description)
                 .eq(ObjectUtils.isNotEmpty(productType), "productType", productType);
-        queryWrapper.orderBy(StringUtils.isNotBlank(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
+        // 根据金额升序排列
+        queryWrapper.orderByAsc("total");
         Page<ProductInfo> productInfoPage = productInfoService.page(new Page<>(current, size), queryWrapper);
         return ResultUtils.success(productInfoPage);
     }
