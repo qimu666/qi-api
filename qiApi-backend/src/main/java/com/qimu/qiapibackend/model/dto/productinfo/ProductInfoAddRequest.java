@@ -1,4 +1,4 @@
-package com.qimu.qiapibackend.model.dto.productInfo;
+package com.qimu.qiapibackend.model.dto.productinfo;
 
 import lombok.Data;
 
@@ -7,18 +7,14 @@ import java.util.Date;
 
 /**
  * @Author: QiMu
- * @Date: 2023/08/25 02:50:48
+ * @Date: 2023/08/25 03:08:47
  * @Version: 1.0
- * @Description: 更新请求
+ * @Description: 创建请求
  */
 @Data
-public class ProductInfoUpdateRequest implements Serializable {
+public class ProductInfoAddRequest implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    /**
-     * id
-     */
-    private long id;
 
     /**
      * 产品名称
@@ -29,7 +25,6 @@ public class ProductInfoUpdateRequest implements Serializable {
      * 产品描述
      */
     private String description;
-
 
     /**
      * 金额(分)

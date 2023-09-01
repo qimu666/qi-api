@@ -1,5 +1,6 @@
 package com.qimu.qiapibackend.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -52,11 +53,7 @@ public class UserController {
         if (userRegisterRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        String userAccount = userRegisterRequest.getUserAccount();
-        String userName = userRegisterRequest.getUserName();
-        String userPassword = userRegisterRequest.getUserPassword();
-        String checkPassword = userRegisterRequest.getCheckPassword();
-        long result = userService.userRegister(userAccount, userPassword, checkPassword, userName);
+        long result = userService.userRegister(userRegisterRequest);
         return ResultUtils.success(result);
     }
 
@@ -247,14 +244,14 @@ public class UserController {
         }
         QueryWrapper<User> queryWrapper = new QueryWrapper<>(userQuery);
         Page<User> userPage = userService.page(new Page<>(current, size), queryWrapper);
-        Page<UserVO> userVOPage = new PageDTO<>(userPage.getCurrent(), userPage.getSize(), userPage.getTotal());
+        Page<UserVO> userVoPage = new PageDTO<>(userPage.getCurrent(), userPage.getSize(), userPage.getTotal());
         List<UserVO> userVOList = userPage.getRecords().stream().map(user -> {
             UserVO userVO = new UserVO();
             BeanUtils.copyProperties(user, userVO);
             return userVO;
         }).collect(Collectors.toList());
-        userVOPage.setRecords(userVOList);
-        return ResultUtils.success(userVOPage);
+        userVoPage.setRecords(userVOList);
+        return ResultUtils.success(userVoPage);
     }
 
     @PostMapping("/update/voucher")
@@ -266,5 +263,26 @@ public class UserController {
         return ResultUtils.success(userVO);
     }
 
+    /**
+     * 通过邀请码获取用户
+     *
+     * @param invitationCode 邀请码
+     * @return {@link BaseResponse}<{@link UserVO}>
+     */
+    @PostMapping("/get/invitationCode")
+    public BaseResponse<UserVO> getUserByInvitationCode(String invitationCode) {
+        if (StringUtils.isBlank(invitationCode)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        LambdaQueryWrapper<User> userLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        userLambdaQueryWrapper.eq(User::getInvitationCode, invitationCode);
+        User invitationCodeUser = userService.getOne(userLambdaQueryWrapper);
+        if (invitationCodeUser == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "邀请码不存在");
+        }
+        UserVO userVO = new UserVO();
+        BeanUtils.copyProperties(invitationCodeUser, userVO);
+        return ResultUtils.success(userVO);
+    }
     // endregion
 }

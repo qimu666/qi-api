@@ -4,8 +4,8 @@ import com.qimu.qiapibackend.common.BaseResponse;
 import com.qimu.qiapibackend.common.ErrorCode;
 import com.qimu.qiapibackend.common.ResultUtils;
 import com.qimu.qiapibackend.exception.BusinessException;
-import com.qimu.qiapibackend.model.dto.ProductOrder.ProductOrderQueryRequest;
 import com.qimu.qiapibackend.model.dto.pay.PayCreateRequest;
+import com.qimu.qiapibackend.model.dto.productorder.ProductOrderQueryRequest;
 import com.qimu.qiapibackend.model.entity.ProductOrder;
 import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.vo.ProductOrderVo;
@@ -39,7 +39,7 @@ import static com.qimu.qiapibackend.model.enums.PaymentStatusEnum.SUCCESS;
 @RestController
 @Slf4j
 @RequestMapping("/order")
-public class PayController {
+public class OrderController {
     @Resource
     private UserService userService;
     @Resource

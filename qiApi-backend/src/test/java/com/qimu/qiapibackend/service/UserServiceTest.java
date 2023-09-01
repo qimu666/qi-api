@@ -120,38 +120,4 @@ class UserServiceTest {
         Assertions.assertNotNull(user);
     }
 
-    @Test
-    void userRegister() {
-        String userAccount = "qimu";
-        String userPassword = "";
-        String checkPassword = "123456";
-        String userName = "123456";
-        try {
-            long result = userService.userRegister(userAccount, userPassword, checkPassword, userName);
-            Assertions.assertEquals(-1, result);
-            userAccount = "yu";
-            result = userService.userRegister(userAccount, userPassword, checkPassword, userName);
-            Assertions.assertEquals(-1, result);
-            userAccount = "qimu";
-            userPassword = "123456";
-            result = userService.userRegister(userAccount, userPassword, checkPassword, userName);
-            Assertions.assertEquals(-1, result);
-            userAccount = "yu pi";
-            userPassword = "12345678";
-            result = userService.userRegister(userAccount, userPassword, checkPassword, userName);
-            Assertions.assertEquals(-1, result);
-            checkPassword = "123456789";
-            result = userService.userRegister(userAccount, userPassword, checkPassword, userName);
-            Assertions.assertEquals(-1, result);
-            userAccount = "dogYupi";
-            checkPassword = "12345678";
-            result = userService.userRegister(userAccount, userPassword, checkPassword, userName);
-            Assertions.assertEquals(-1, result);
-            userAccount = "qimu";
-            result = userService.userRegister(userAccount, userPassword, checkPassword, userName);
-            Assertions.assertEquals(-1, result);
-        } catch (Exception e) {
-
-        }
-    }
 }

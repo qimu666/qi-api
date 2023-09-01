@@ -1,4 +1,4 @@
-package com.qimu.qiapibackend.model.dto.productInfo;
+package com.qimu.qiapibackend.model.dto.interfaceinfo;
 
 import com.qimu.qiapibackend.common.PageRequest;
 import lombok.Data;
@@ -14,7 +14,7 @@ import java.io.Serializable;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class ProductInfoSearchTextRequest extends PageRequest implements Serializable {
+public class InterfaceInfoSearchTextRequest extends PageRequest implements Serializable {
     private static final long serialVersionUID = -6337349622479990038L;
 
     private String searchText;
