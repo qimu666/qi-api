@@ -2,12 +2,14 @@ package com.qimu.qiapibackend.service.impl;
 
 
 import cn.hutool.core.util.RandomUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qimu.qiapibackend.common.ErrorCode;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.mapper.UserMapper;
+import com.qimu.qiapibackend.model.dto.user.UserRegisterRequest;
 import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.UserService;
@@ -15,11 +17,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
+import java.util.Random;
 
 import static com.qimu.qiapibackend.constant.UserConstant.ADMIN_ROLE;
 import static com.qimu.qiapibackend.constant.UserConstant.USER_LOGIN_STATE;
@@ -43,7 +47,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private UserMapper userMapper;
 
     @Override
-    public long userRegister(String userAccount, String userPassword, String checkPassword, String userName) {
+    @Transactional(rollbackFor = Exception.class)
+    public long userRegister(UserRegisterRequest userRegisterRequest) {
+        String userAccount = userRegisterRequest.getUserAccount();
+        String userPassword = userRegisterRequest.getUserPassword();
+        String userName = userRegisterRequest.getUserName();
+        String checkPassword = userRegisterRequest.getCheckPassword();
+        String invitationCode = userRegisterRequest.getInvitationCode();
+
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword, userName)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
@@ -69,9 +80,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             if (count > 0) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");
             }
+            User invitationCodeUser = null;
+            if (StringUtils.isNotBlank(invitationCode)) {
+                LambdaQueryWrapper<User> userLambdaQueryWrapper = new LambdaQueryWrapper<>();
+                userLambdaQueryWrapper.eq(User::getInvitationCode, invitationCode);
+                // 可能出现重复invitationCode,查出的不是一条
+                invitationCodeUser = this.getOne(userLambdaQueryWrapper);
+                if (invitationCodeUser == null) {
+                    throw new BusinessException(ErrorCode.OPERATION_ERROR, "该邀请码无效");
+                }
+            }
+
             // 2. 加密
             String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
-
+            // ak/sk
             String accessKey = DigestUtils.md5DigestAsHex((userAccount + SALT + VOUCHER).getBytes());
             String secretKey = DigestUtils.md5DigestAsHex((SALT + VOUCHER + userAccount).getBytes());
 
@@ -82,6 +104,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             user.setUserName(userName);
             user.setAccessKey(accessKey);
             user.setSecretKey(secretKey);
+            if (invitationCodeUser != null) {
+                user.setBalance(100);
+                this.updateWalletBalance(invitationCodeUser.getId(), 100);
+            }
+            user.setInvitationCode(generateRandomString(8));
             boolean saveResult = this.save(user);
             if (!saveResult) {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
@@ -214,6 +241,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         userLambdaUpdateWrapper.eq(User::getId, userId);
         userLambdaUpdateWrapper.setSql("balance = balance + " + addPoints);
         return this.update(userLambdaUpdateWrapper);
+    }
+
+    /**
+     * 生成随机字符串
+     *
+     * @param length 长
+     * @return {@link String}
+     */
+    public String generateRandomString(int length) {
+        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        StringBuilder sb = new StringBuilder(length);
+        Random random = new Random();
+        for (int i = 0; i < length; i++) {
+            int index = random.nextInt(characters.length());
+            char randomChar = characters.charAt(index);
+            sb.append(randomChar);
+        }
+        return sb.toString();
     }
 }
 

@@ -1,15 +1,13 @@
 package com.qimu.qiapibackend.controller;
 
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qimu.qiapibackend.annotation.AuthCheck;
 import com.qimu.qiapibackend.common.*;
 import com.qimu.qiapibackend.constant.CommonConstant;
 import com.qimu.qiapibackend.exception.BusinessException;
-import com.qimu.qiapibackend.model.dto.InterfaceInfo.InterfaceInfoAddRequest;
-import com.qimu.qiapibackend.model.dto.InterfaceInfo.InterfaceInfoQueryRequest;
-import com.qimu.qiapibackend.model.dto.InterfaceInfo.InterfaceInfoSearchTextRequest;
-import com.qimu.qiapibackend.model.dto.InterfaceInfo.InterfaceInfoUpdateRequest;
+import com.qimu.qiapibackend.model.dto.interfaceinfo.*;
 import com.qimu.qiapibackend.model.entity.InterfaceInfo;
 import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.enums.InterfaceStatusEnum;
@@ -300,4 +298,33 @@ public class InterfaceInfoController {
 
     // endregion
 
+    /**
+     * 调用接口
+     *
+     * @param invokeRequest id请求
+     * @param request       请求
+     * @return {@link BaseResponse}<{@link Object}>
+     */
+    @PostMapping("/invoke")
+    public BaseResponse<Object> invokeInterface(@RequestBody InvokeRequest invokeRequest, HttpServletRequest request) {
+        if (ObjectUtils.anyNull(invokeRequest, invokeRequest.getId()) || invokeRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Long id = invokeRequest.getId();
+        InterfaceInfo interfaceInfo = interfaceInfoService.getById(id);
+        if (interfaceInfo == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        if (interfaceInfo.getStatus() != InterfaceStatusEnum.ONLINE.getValue()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "接口未开启");
+        }
+        User loginUser = userService.getLoginUser(request);
+        String accessKey = loginUser.getAccessKey();
+        String secretKey = loginUser.getSecretKey();
+
+        QiApiClient qiApiClient = new QiApiClient(accessKey, secretKey);
+        QiApiRequest qiApiRequest = JSONUtil.toBean(invokeRequest.getUserRequestParams(), QiApiRequest.class);
+        qiApiClient.getNameByJsonPost(qiApiRequest);
+        return ResultUtils.success(qiApiClient.getNameByJsonPost(qiApiRequest));
+    }
 }

@@ -1,4 +1,4 @@
-package com.qimu.qiapibackend.model.dto.ProductOrder;
+package com.qimu.qiapibackend.model.dto.productorder;
 
 import lombok.Data;
 

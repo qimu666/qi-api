@@ -1,4 +1,4 @@
-package com.qimu.qiapibackend.model.dto.InterfaceInfo;
+package com.qimu.qiapibackend.model.dto.interfaceinfo;
 
 import com.qimu.qiapibackend.common.PageRequest;
 import lombok.Data;

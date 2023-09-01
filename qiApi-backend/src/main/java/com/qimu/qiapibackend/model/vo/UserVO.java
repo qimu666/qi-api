@@ -23,6 +23,11 @@ public class UserVO implements Serializable {
     private String userName;
 
     /**
+     * 邀请码
+     */
+    private String invitationCode;
+
+    /**
      * 钱包余额（分）
      */
     private Integer balance;

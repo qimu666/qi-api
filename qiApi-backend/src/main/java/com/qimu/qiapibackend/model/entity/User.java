@@ -29,6 +29,11 @@ public class User implements Serializable {
      * 账号
      */
     private String userAccount;
+
+    /**
+     * 邀请码
+     */
+    private String invitationCode;
     /**
      * 访问密钥
      */
