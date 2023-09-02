@@ -126,6 +126,9 @@ public class UserController {
         }
         User user = new User();
         BeanUtils.copyProperties(userAddRequest, user);
+        // 校验
+        userService.validUser(user, true);
+
         boolean result = userService.save(user);
         if (!result) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR);
@@ -162,16 +165,23 @@ public class UserController {
         if (ObjectUtils.anyNull(userUpdateRequest, userUpdateRequest.getId()) || userUpdateRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        if (StringUtils.isNotBlank(userUpdateRequest.getUserRole()) && !userService.isAdmin(request)) {
+        // 管理员才能操作
+        boolean adminOperation = ObjectUtils.isNotEmpty(userUpdateRequest.getBalance())
+                || StringUtils.isNoneBlank(userUpdateRequest.getUserRole()) || StringUtils.isNoneBlank(userUpdateRequest.getUserPassword());
+
+        if (adminOperation && !userService.isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
-        // 校验是否登录
-        userService.getLoginUser(request);
+
         User user = new User();
         BeanUtils.copyProperties(userUpdateRequest, user);
+        // 参数校验
+        userService.validUser(user, false);
+        // 校验是否登录
+        userService.getLoginUser(request);
+
         LambdaUpdateWrapper<User> userLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
         userLambdaUpdateWrapper.eq(User::getId, user.getId());
-        userLambdaUpdateWrapper.eq(StringUtils.isNotBlank(user.getUserRole()), User::getUserRole, "admin");
 
         boolean result = userService.update(user, userLambdaUpdateWrapper);
         if (!result) {

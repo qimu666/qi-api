@@ -14,6 +14,7 @@ import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -25,8 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.Random;
 
-import static com.qimu.qiapibackend.constant.UserConstant.ADMIN_ROLE;
-import static com.qimu.qiapibackend.constant.UserConstant.USER_LOGIN_STATE;
+import static com.qimu.qiapibackend.constant.UserConstant.*;
 
 
 /**
@@ -38,11 +38,6 @@ import static com.qimu.qiapibackend.constant.UserConstant.USER_LOGIN_STATE;
 @Slf4j
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
-    /**
-     * 盐值，混淆密码
-     */
-    private static final String SALT = "qimu";
-    private static final String VOUCHER = "accessKey_secretKey";
     @Resource
     private UserMapper userMapper;
 
@@ -67,6 +62,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         if (userPassword.length() < 8 || checkPassword.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短");
+        }
+        //  5. 账户不包含特殊字符
+        // 匹配由数字、小写字母、大写字母组成的字符串,且字符串的长度至少为1个字符
+        String pattern = "[0-9a-zA-Z]+";
+        if (!userAccount.matches(pattern)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号由数字、小写字母、大写字母组成");
         }
         // 密码和校验密码相同
         if (!userPassword.equals(checkPassword)) {
@@ -124,10 +125,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
         if (userAccount.length() < 4) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号错误");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号过短,不能小于4位");
         }
         if (userPassword.length() < 8) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码错误");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短,不能低于8位字符");
+        }
+        //  5. 账户不包含特殊字符
+        // 匹配由数字、小写字母、大写字母组成的字符串,且字符串的长度至少为1个字符
+        String pattern = "[0-9a-zA-Z]+";
+        if (!userAccount.matches(pattern)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号需由数字、小写字母、大写字母组成");
         }
         // 2. 加密
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
@@ -208,14 +215,38 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String accessKey = user.getAccessKey();
         String secretKey = user.getSecretKey();
         String userAvatar = user.getUserAvatar();
-        Integer gender = user.getGender();
+        String gender = user.getGender();
         String userRole = user.getUserRole();
         String userPassword = user.getUserPassword();
+        String invitationCode = user.getInvitationCode();
+        Integer balance = user.getBalance();
 
         // 创建时，所有参数必须非空
         if (add) {
-            if (StringUtils.isAnyBlank(userName, userAccount, userPassword)) {
+            if (StringUtils.isAnyBlank(userAccount, userPassword)) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR);
+            }
+        }
+        //  5. 账户不包含特殊字符
+        // 匹配由数字、小写字母、大写字母组成的字符串,且字符串的长度至少为1个字符
+        String pattern = "[0-9a-zA-Z]+";
+        if (StringUtils.isNotBlank(userAccount) && !userAccount.matches(pattern)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号由数字、小写字母、大写字母组成");
+        }
+        if (ObjectUtils.isNotEmpty(balance) && balance < 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "钱包余额不能为负数");
+        }
+        if (StringUtils.isNotBlank(userPassword)) {
+            String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
+            user.setUserPassword(encryptPassword);
+        }
+        // 账户不能重复
+        if (StringUtils.isNotBlank(userAccount)) {
+            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("userAccount", userAccount);
+            long count = userMapper.selectCount(queryWrapper);
+            if (count > 0) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");
             }
         }
     }

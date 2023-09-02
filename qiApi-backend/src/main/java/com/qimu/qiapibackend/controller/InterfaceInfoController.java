@@ -322,9 +322,14 @@ public class InterfaceInfoController {
         String accessKey = loginUser.getAccessKey();
         String secretKey = loginUser.getSecretKey();
 
-        QiApiClient qiApiClient = new QiApiClient(accessKey, secretKey);
-        QiApiRequest qiApiRequest = JSONUtil.toBean(invokeRequest.getUserRequestParams(), QiApiRequest.class);
-        qiApiClient.getNameByJsonPost(qiApiRequest);
-        return ResultUtils.success(qiApiClient.getNameByJsonPost(qiApiRequest));
+
+        try {
+            QiApiClient qiApiClient = new QiApiClient(accessKey, secretKey);
+            QiApiRequest qiApiRequest = JSONUtil.toBean(invokeRequest.getUserRequestParams(), QiApiRequest.class);
+            qiApiClient.getNameByJsonPost(qiApiRequest);
+            return ResultUtils.success(qiApiClient.getNameByJsonPost(qiApiRequest));
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, e.getMessage());
+        }
     }
 }
