@@ -9,8 +9,8 @@ import com.qimu.qiapibackend.constant.CommonConstant;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.model.dto.interfaceinfo.*;
 import com.qimu.qiapibackend.model.entity.InterfaceInfo;
-import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.enums.InterfaceStatusEnum;
+import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.InterfaceInfoService;
 import com.qimu.qiapibackend.service.UserService;
 import com.qimu.qiapisdk.client.QiApiClient;
@@ -66,7 +66,7 @@ public class InterfaceInfoController {
         BeanUtils.copyProperties(interfaceInfoAddRequest, interfaceInfo);
         // 校验
         interfaceInfoService.validInterfaceInfo(interfaceInfo, true);
-        User loginUser = userService.getLoginUser(request);
+        UserVO loginUser = userService.getLoginUser(request);
         interfaceInfo.setUserId(loginUser.getId());
         boolean result = interfaceInfoService.save(interfaceInfo);
         if (!result) {
@@ -89,7 +89,7 @@ public class InterfaceInfoController {
         if (ObjectUtils.anyNull(deleteRequest, deleteRequest.getId()) || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        User user = userService.getLoginUser(request);
+        UserVO user = userService.getLoginUser(request);
         long id = deleteRequest.getId();
         // 判断是否存在
         InterfaceInfo oldInterfaceInfo = interfaceInfoService.getById(id);
@@ -123,7 +123,7 @@ public class InterfaceInfoController {
         BeanUtils.copyProperties(interfaceInfoUpdateRequest, interfaceInfo);
         // 参数校验
         interfaceInfoService.validInterfaceInfo(interfaceInfo, false);
-        User user = userService.getLoginUser(request);
+        UserVO user = userService.getLoginUser(request);
         long id = interfaceInfoUpdateRequest.getId();
         // 判断是否存在
         InterfaceInfo oldInterfaceInfo = interfaceInfoService.getById(id);
@@ -318,7 +318,7 @@ public class InterfaceInfoController {
         if (interfaceInfo.getStatus() != InterfaceStatusEnum.ONLINE.getValue()) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "接口未开启");
         }
-        User loginUser = userService.getLoginUser(request);
+        UserVO loginUser = userService.getLoginUser(request);
         String accessKey = loginUser.getAccessKey();
         String secretKey = loginUser.getSecretKey();
 

@@ -2,6 +2,8 @@ package com.qimu.qiapibackend.service;
 
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.qimu.qiapibackend.model.dto.user.UserEmailLoginRequest;
+import com.qimu.qiapibackend.model.dto.user.UserEmailRegisterRequest;
 import com.qimu.qiapibackend.model.dto.user.UserRegisterRequest;
 import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.vo.UserVO;
@@ -25,6 +27,14 @@ public interface UserService extends IService<User> {
     long userRegister(UserRegisterRequest userRegisterRequest);
 
     /**
+     * 用户电子邮件注册
+     *
+     * @param userEmailRegisterRequest 用户电子邮件注册请求
+     * @return long
+     */
+    long userEmailRegister(UserEmailRegisterRequest userEmailRegisterRequest);
+
+    /**
      * 用户登录
      *
      * @param userAccount  用户账户
@@ -32,16 +42,16 @@ public interface UserService extends IService<User> {
      * @param request      请求
      * @return 脱敏后的用户信息
      */
-    User userLogin(String userAccount, String userPassword, HttpServletRequest request);
+    UserVO userLogin(String userAccount, String userPassword, HttpServletRequest request);
 
     /**
      * 获取登录用户
      * 获取当前登录用户
      *
      * @param request 请求
-     * @return {@link User}
+     * @return {@link UserVO}
      */
-    User getLoginUser(HttpServletRequest request);
+    UserVO getLoginUser(HttpServletRequest request);
 
     /**
      * 是管理
@@ -78,5 +88,22 @@ public interface UserService extends IService<User> {
      */
     UserVO updateVoucher(User loginUser);
 
-    boolean updateWalletBalance(Long userId, Integer addPoints);
+    /**
+     * 添加钱包余额
+     *
+     * @param userId    用户id
+     * @param addPoints 添加点
+     * @return boolean
+     */
+    boolean addWalletBalance(Long userId, Integer addPoints);
+
+    /**
+     * 用户电子邮件登录
+     *
+     * @param userEmailLoginRequest 用户电子邮件登录请求
+     * @param request               要求
+     * @return {@link UserVO}
+     */
+    UserVO userEmailLogin(UserEmailLoginRequest userEmailLoginRequest, HttpServletRequest request);
+
 }

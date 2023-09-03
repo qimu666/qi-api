@@ -7,11 +7,11 @@ import com.qimu.qiapibackend.common.ResultUtils;
 import com.qimu.qiapibackend.constant.FileConstant;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.manager.CosManager;
-import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.enums.FileUploadBizEnum;
 import com.qimu.qiapibackend.model.enums.ImageStatusEnum;
 import com.qimu.qiapibackend.model.file.UploadFileRequest;
 import com.qimu.qiapibackend.model.vo.ImageVo;
+import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -60,7 +60,7 @@ public class FileController {
             return uploadError(imageVo, multipartFile, "上传失败,情重试.");
         }
         validFile(multipartFile, fileUploadBizEnum);
-        User loginUser = userService.getLoginUser(request);
+        UserVO loginUser = userService.getLoginUser(request);
         // 文件目录：根据业务、用户来划分
         String uuid = RandomStringUtils.randomAlphanumeric(8);
         String filename = uuid + "-" + multipartFile.getOriginalFilename();

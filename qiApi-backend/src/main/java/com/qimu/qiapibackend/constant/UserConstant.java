@@ -38,4 +38,5 @@ public interface UserConstant {
      * ak/sk 混淆
      */
     String VOUCHER = "accessKey_secretKey";
+
 }

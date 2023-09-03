@@ -3,6 +3,7 @@ package com.qimu.qiapibackend.service;
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.github.binarywang.wxpay.bean.request.WxPayRefundV3Request;
 import com.github.binarywang.wxpay.bean.request.WxPayUnifiedOrderV3Request;
 import com.github.binarywang.wxpay.bean.request.WxPayUnifiedOrderV3Request.Amount;
@@ -50,7 +51,13 @@ class UserServiceTest {
     private UserService userService;
 
     @Test
-    void s() {
+    void getCaptcha() {
+        String captcha = RandomUtil.randomNumbers(6);
+        System.err.println(captcha);
+    }
+
+    @Test
+    void date() {
 
         Date date = DateUtil.date(System.currentTimeMillis());
         System.err.println(date + "=data");

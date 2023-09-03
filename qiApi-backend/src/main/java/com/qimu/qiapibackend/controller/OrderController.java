@@ -7,8 +7,8 @@ import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.model.dto.pay.PayCreateRequest;
 import com.qimu.qiapibackend.model.dto.productorder.ProductOrderQueryRequest;
 import com.qimu.qiapibackend.model.entity.ProductOrder;
-import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.vo.ProductOrderVo;
+import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.OrderService;
 import com.qimu.qiapibackend.service.ProductOrderService;
 import com.qimu.qiapibackend.service.UserService;
@@ -66,7 +66,7 @@ public class OrderController {
         if (StringUtils.isBlank(payType)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "暂无该支付方式");
         }
-        User loginUser = userService.getLoginUser(request);
+        UserVO loginUser = userService.getLoginUser(request);
         ProductOrderVo productOrderVo = orderService.createOrderByPayType(productId, payType, loginUser);
         return ResultUtils.success(productOrderVo);
     }

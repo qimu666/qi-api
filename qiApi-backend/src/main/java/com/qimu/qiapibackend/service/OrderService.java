@@ -1,8 +1,8 @@
 package com.qimu.qiapibackend.service;
 
 import com.qimu.qiapibackend.model.entity.ProductOrder;
-import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.vo.ProductOrderVo;
+import com.qimu.qiapibackend.model.vo.UserVO;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -39,7 +39,7 @@ public interface OrderService {
      * @param loginUser 登录用户
      * @return {@link ProductOrderVo}
      */
-    ProductOrderVo createOrderByPayType(Long productId, String payType, User loginUser);
+    ProductOrderVo createOrderByPayType(Long productId, String payType, UserVO loginUser);
 
     /**
      * 按持续时间获得无支付指令

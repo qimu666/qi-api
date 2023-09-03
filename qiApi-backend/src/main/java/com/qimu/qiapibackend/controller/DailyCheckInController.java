@@ -6,7 +6,7 @@ import com.qimu.qiapibackend.common.ErrorCode;
 import com.qimu.qiapibackend.common.ResultUtils;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.model.entity.DailyCheckIn;
-import com.qimu.qiapibackend.model.entity.User;
+import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.DailyCheckInService;
 import com.qimu.qiapibackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +48,7 @@ public class DailyCheckInController {
     @PostMapping("/doCheckIn")
     @Transactional(rollbackFor = Exception.class)
     public BaseResponse<Boolean> doDailyCheckIn(HttpServletRequest request) {
-        User loginUser = userService.getLoginUser(request);
+        UserVO loginUser = userService.getLoginUser(request);
         synchronized (loginUser.getUserAccount().intern()) {
             LambdaQueryWrapper<DailyCheckIn> dailyCheckInLambdaQueryWrapper = new LambdaQueryWrapper<>();
             dailyCheckInLambdaQueryWrapper.eq(DailyCheckIn::getUserId, loginUser.getId());
@@ -60,8 +60,8 @@ public class DailyCheckInController {
             dailyCheckIn.setUserId(loginUser.getId());
             dailyCheckIn.setAddPoints(10);
             boolean dailyCheckInResult = dailyCheckInService.save(dailyCheckIn);
-            boolean updateWalletBalance = userService.updateWalletBalance(loginUser.getId(), dailyCheckIn.getAddPoints());
-            boolean result = dailyCheckInResult & updateWalletBalance;
+            boolean addWalletBalance = userService.addWalletBalance(loginUser.getId(), dailyCheckIn.getAddPoints());
+            boolean result = dailyCheckInResult & addWalletBalance;
             if (!result) {
                 throw new BusinessException(ErrorCode.OPERATION_ERROR);
             }
