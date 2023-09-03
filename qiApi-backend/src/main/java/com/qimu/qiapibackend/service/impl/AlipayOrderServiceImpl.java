@@ -25,11 +25,11 @@ import com.qimu.qiapibackend.mapper.ProductOrderMapper;
 import com.qimu.qiapibackend.model.alipay.AliPayAsyncResponse;
 import com.qimu.qiapibackend.model.entity.ProductInfo;
 import com.qimu.qiapibackend.model.entity.ProductOrder;
-import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.enums.AlipayTradeStatusEnum;
 import com.qimu.qiapibackend.model.enums.PaymentStatusEnum;
 import com.qimu.qiapibackend.model.vo.PaymentInfoVo;
 import com.qimu.qiapibackend.model.vo.ProductOrderVo;
+import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.PaymentInfoService;
 import com.qimu.qiapibackend.service.ProductOrderService;
 import com.qimu.qiapibackend.service.UserService;
@@ -79,7 +79,7 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
     private RedissonClient redissonClient;
 
     @Override
-    public ProductOrderVo getProductOrder(Long productId, User loginUser, String payType) {
+    public ProductOrderVo getProductOrder(Long productId, UserVO loginUser, String payType) {
         LambdaQueryWrapper<ProductOrder> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ProductOrder::getProductId, productId);
         lambdaQueryWrapper.eq(ProductOrder::getStatus, PaymentStatusEnum.NOTPAY.getValue());
@@ -98,7 +98,7 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
     }
 
     @Override
-    public ProductOrderVo saveProductOrder(Long productId, User loginUser) {
+    public ProductOrderVo saveProductOrder(Long productId, UserVO loginUser) {
         ProductInfo productInfo = productInfoService.getById(productId);
         if (productInfo == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "商品不存在");
@@ -217,7 +217,7 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
                 // 订单已支付更新商户端的订单状态
                 boolean updateOrderStatus = this.updateOrderStatusByOrderNo(orderNo, SUCCESS.getValue());
                 // 补发积分到用户钱包
-                boolean updateWalletBalance = userService.updateWalletBalance(productOrder.getUserId(), productOrder.getAddPoints());
+                boolean addWalletBalance = userService.addWalletBalance(productOrder.getUserId(), productOrder.getAddPoints());
                 // 保存支付记录
                 PaymentInfoVo paymentInfoVo = new PaymentInfoVo();
                 paymentInfoVo.setAppid(aliPayAccountConfig.getAppId());
@@ -237,7 +237,7 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
                 amount.setPayerCurrency(alipayTradeQueryResponse.getPayCurrency());
                 paymentInfoVo.setAmount(amount);
                 boolean paymentResult = paymentInfoService.createPaymentInfo(paymentInfoVo);
-                if (!updateOrderStatus & !updateWalletBalance & !paymentResult) {
+                if (!updateOrderStatus & !addWalletBalance & !paymentResult) {
                     throw new BusinessException(ErrorCode.OPERATION_ERROR);
                 }
                 log.info("超时订单{},更新成功", orderNo);
@@ -333,7 +333,7 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
         // 更新订单状态
         boolean updateOrderStatus = this.updateOrderStatusByOrderNo(outTradeNo, SUCCESS.getValue());
         // 更新用户积分
-        boolean updateWalletBalance = userService.updateWalletBalance(productOrder.getUserId(), productOrder.getAddPoints());
+        boolean addWalletBalance = userService.addWalletBalance(productOrder.getUserId(), productOrder.getAddPoints());
         // 保存支付记录
         PaymentInfoVo paymentInfoVo = new PaymentInfoVo();
         paymentInfoVo.setAppid(response.getAppId());
@@ -353,7 +353,7 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
         amount.setPayerCurrency("CNY");
         paymentInfoVo.setAmount(amount);
         boolean paymentResult = paymentInfoService.createPaymentInfo(paymentInfoVo);
-        if (paymentResult && updateOrderStatus && updateWalletBalance) {
+        if (paymentResult && updateOrderStatus && addWalletBalance) {
             log.info("【支付回调通知处理成功】");
             return "success";
         }

@@ -4,9 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.qimu.qiapibackend.common.ErrorCode;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.model.entity.ProductOrder;
-import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.enums.PaymentStatusEnum;
 import com.qimu.qiapibackend.model.vo.ProductOrderVo;
+import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.OrderService;
 import com.qimu.qiapibackend.service.ProductOrderService;
 import lombok.extern.slf4j.Slf4j;
@@ -59,7 +59,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ProductOrderVo createOrderByPayType(Long productId, String payType, User loginUser) {
+    public ProductOrderVo createOrderByPayType(Long productId, String payType, UserVO loginUser) {
         // 按付费类型获取产品订单服务Bean
         ProductOrderService productOrderService = getProductOrderServiceByPayType(payType);
         // 创建支付订单

@@ -29,5 +29,14 @@ public interface UserConstant {
      */
     String ADMIN_ROLE = "admin";
 
-    // endregion
+
+    /**
+     * 盐值，混淆密码
+     */
+    String SALT = "qimu";
+    /**
+     * ak/sk 混淆
+     */
+    String VOUCHER = "accessKey_secretKey";
+
 }

@@ -1,5 +1,6 @@
 package com.qimu.qiapibackend.controller;
 
+import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -15,18 +16,27 @@ import com.qimu.qiapibackend.model.dto.user.*;
 import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.UserService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static com.qimu.qiapibackend.constant.EmailConstant.*;
 import static com.qimu.qiapibackend.constant.UserConstant.ADMIN_ROLE;
+import static com.qimu.qiapibackend.utils.EmailUtil.buildEmailContent;
 
 /**
  * 用户接口
@@ -35,10 +45,17 @@ import static com.qimu.qiapibackend.constant.UserConstant.ADMIN_ROLE;
  */
 @RestController
 @RequestMapping("/user")
+@Slf4j
 public class UserController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private JavaMailSender mailSender;
+
+    @Resource
+    private RedisTemplate<String, String> redisTemplate;
 
     // region 登录相关
 
@@ -65,7 +82,7 @@ public class UserController {
      * @return {@link BaseResponse}<{@link User}>
      */
     @PostMapping("/login")
-    public BaseResponse<User> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+    public BaseResponse<UserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
         if (userLoginRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -74,8 +91,71 @@ public class UserController {
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        User user = userService.userLogin(userAccount, userPassword, request);
+        UserVO user = userService.userLogin(userAccount, userPassword, request);
         return ResultUtils.success(user);
+    }
+
+    /**
+     * 用户电子邮件登录
+     *
+     * @param userEmailLoginRequest 用户登录请求
+     * @param request               请求
+     * @return {@link BaseResponse}<{@link User}>
+     */
+    @PostMapping("/email/login")
+    public BaseResponse<UserVO> userEmailLogin(@RequestBody UserEmailLoginRequest userEmailLoginRequest, HttpServletRequest request) {
+        if (userEmailLoginRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        UserVO user = userService.userEmailLogin(userEmailLoginRequest, request);
+        return ResultUtils.success(user);
+    }
+
+
+    /**
+     * 用户电子邮件注册
+     *
+     * @param userEmailRegisterRequest 用户电子邮件注册请求
+     * @return {@link BaseResponse}<{@link UserVO}>
+     */
+    @PostMapping("/email/register")
+    public BaseResponse<Long> userEmailRegister(@RequestBody UserEmailRegisterRequest userEmailRegisterRequest) {
+        if (userEmailRegisterRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        long result = userService.userEmailRegister(userEmailRegisterRequest);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 获取验证码
+     *
+     * @param emailAccount 电子邮件帐户
+     * @return {@link BaseResponse}<{@link String}>
+     */
+    @GetMapping("/getCaptcha")
+    public BaseResponse<Boolean> getCaptcha(String emailAccount) {
+        String captcha = RandomUtil.randomNumbers(6);
+        try {
+            sendEmail(emailAccount, captcha);
+            redisTemplate.opsForValue().set(CAPTCHA_CACHE_KEY + emailAccount, captcha, 5, TimeUnit.MINUTES);
+            return ResultUtils.success(true);
+        } catch (Exception e) {
+            log.error("【发送验证码失败】" + e.getMessage());
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "验证码获取失败");
+        }
+    }
+
+    private void sendEmail(String emailAccount, String captcha) throws MessagingException {
+
+        MimeMessage message = mailSender.createMimeMessage();
+        // 邮箱发送内容组成
+        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+        helper.setSubject(EMAIL_SUBJECT);
+        helper.setText(buildEmailContent(captcha), true);
+        helper.setTo(emailAccount);
+        helper.setFrom("柒木接口" + '<' + EMAIL_FROM + '>');
+        mailSender.send(message);
     }
 
     /**
@@ -101,7 +181,7 @@ public class UserController {
      */
     @GetMapping("/get/login")
     public BaseResponse<UserVO> getLoginUser(HttpServletRequest request) {
-        User user = userService.getLoginUser(request);
+        UserVO user = userService.getLoginUser(request);
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO);
         return ResultUtils.success(userVO);
@@ -126,6 +206,9 @@ public class UserController {
         }
         User user = new User();
         BeanUtils.copyProperties(userAddRequest, user);
+        // 校验
+        userService.validUser(user, true);
+
         boolean result = userService.save(user);
         if (!result) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR);
@@ -162,16 +245,24 @@ public class UserController {
         if (ObjectUtils.anyNull(userUpdateRequest, userUpdateRequest.getId()) || userUpdateRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        if (StringUtils.isNotBlank(userUpdateRequest.getUserRole()) && !userService.isAdmin(request)) {
+
+        // 管理员才能操作
+        boolean adminOperation = ObjectUtils.isNotEmpty(userUpdateRequest.getBalance())
+                || StringUtils.isNoneBlank(userUpdateRequest.getUserRole()) || StringUtils.isNoneBlank(userUpdateRequest.getUserPassword());
+        // 校验是否登录
+        UserVO loginUser = userService.getLoginUser(request);
+        // 处理管理员业务,不是管理员抛异常
+        if (adminOperation && !loginUser.getUserRole().equals(ADMIN_ROLE)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
-        // 校验是否登录
-        userService.getLoginUser(request);
+
         User user = new User();
         BeanUtils.copyProperties(userUpdateRequest, user);
+        // 参数校验
+        userService.validUser(user, false);
+
         LambdaUpdateWrapper<User> userLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
         userLambdaUpdateWrapper.eq(User::getId, user.getId());
-        userLambdaUpdateWrapper.eq(StringUtils.isNotBlank(user.getUserRole()), User::getUserRole, "admin");
 
         boolean result = userService.update(user, userLambdaUpdateWrapper);
         if (!result) {
@@ -259,7 +350,10 @@ public class UserController {
         if (request == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        UserVO userVO = userService.updateVoucher(userService.getLoginUser(request));
+        UserVO loginUser = userService.getLoginUser(request);
+        User user = new User();
+        BeanUtils.copyProperties(loginUser, user);
+        UserVO userVO = userService.updateVoucher(user);
         return ResultUtils.success(userVO);
     }
 
@@ -285,4 +379,5 @@ public class UserController {
         return ResultUtils.success(userVO);
     }
     // endregion
+
 }

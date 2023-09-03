@@ -2,8 +2,8 @@ package com.qimu.qiapibackend.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.qimu.qiapibackend.model.entity.ProductOrder;
-import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.vo.ProductOrderVo;
+import com.qimu.qiapibackend.model.vo.UserVO;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -22,7 +22,7 @@ public interface ProductOrderService extends IService<ProductOrder> {
      * @param loginUser 登录用户
      * @return {@link ProductOrderVo}
      */
-    ProductOrderVo saveProductOrder(Long productId, User loginUser);
+    ProductOrderVo saveProductOrder(Long productId, UserVO loginUser);
 
     /**
      * 更新产品订单
@@ -41,7 +41,7 @@ public interface ProductOrderService extends IService<ProductOrder> {
      * @param payType   付款类型
      * @return {@link ProductOrderVo}
      */
-    ProductOrderVo getProductOrder(Long productId, User loginUser, String payType);
+    ProductOrderVo getProductOrder(Long productId, UserVO loginUser, String payType);
 
 
     /**

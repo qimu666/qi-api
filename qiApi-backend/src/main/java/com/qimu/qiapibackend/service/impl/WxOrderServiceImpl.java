@@ -20,9 +20,9 @@ import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.mapper.ProductOrderMapper;
 import com.qimu.qiapibackend.model.entity.ProductInfo;
 import com.qimu.qiapibackend.model.entity.ProductOrder;
-import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.vo.PaymentInfoVo;
 import com.qimu.qiapibackend.model.vo.ProductOrderVo;
+import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.PaymentInfoService;
 import com.qimu.qiapibackend.service.ProductOrderService;
 import com.qimu.qiapibackend.service.UserService;
@@ -46,7 +46,7 @@ import static com.qimu.qiapibackend.constant.PayConstant.ORDER_PREFIX;
 import static com.qimu.qiapibackend.constant.PayConstant.QUERY_ORDER_STATUS;
 import static com.qimu.qiapibackend.model.enums.PayTypeStatusEnum.WX;
 import static com.qimu.qiapibackend.model.enums.PaymentStatusEnum.*;
-import static com.qimu.qiapibackend.utils.WxPayUtils.getRequestHeader;
+import static com.qimu.qiapibackend.utils.WxPayUtil.getRequestHeader;
 
 
 /**
@@ -79,7 +79,7 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
     private PaymentInfoService paymentInfoService;
 
     @Override
-    public ProductOrderVo getProductOrder(Long productId, User loginUser, String payType) {
+    public ProductOrderVo getProductOrder(Long productId, UserVO loginUser, String payType) {
         LambdaQueryWrapper<ProductOrder> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ProductOrder::getProductId, productId);
         lambdaQueryWrapper.eq(ProductOrder::getStatus, NOTPAY.getValue());
@@ -98,7 +98,7 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
     }
 
     @Override
-    public ProductOrderVo saveProductOrder(Long productId, User loginUser) {
+    public ProductOrderVo saveProductOrder(Long productId, UserVO loginUser) {
 
         ProductInfo productInfo = productInfoService.getById(productId);
         if (productInfo == null) {
@@ -198,7 +198,7 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
             if (tradeState.equals(SUCCESS.getValue())) {
                 this.updateOrderStatusByOrderNo(orderNo, SUCCESS.getValue());
                 // 用户余额补发
-                userService.updateWalletBalance(productOrder.getUserId(), productOrder.getAddPoints());
+                userService.addWalletBalance(productOrder.getUserId(), productOrder.getAddPoints());
                 // 创建支付记录
                 PaymentInfoVo paymentInfoVo = new PaymentInfoVo();
                 BeanUtils.copyProperties(wxPayOrderQueryV3Result, paymentInfoVo);
@@ -238,12 +238,12 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
                     boolean updateOrderStatus = this.updateOrderStatusByOrderNo(outTradeNo, SUCCESS.getValue());
                     redisTemplate.delete(QUERY_ORDER_STATUS + outTradeNo);
                     // 更新用户积分
-                    boolean updateWalletBalance = userService.updateWalletBalance(productOrder.getUserId(), productOrder.getAddPoints());
+                    boolean addWalletBalance = userService.addWalletBalance(productOrder.getUserId(), productOrder.getAddPoints());
                     // 保存支付记录
                     PaymentInfoVo paymentInfoVo = new PaymentInfoVo();
                     BeanUtils.copyProperties(notifyResult, paymentInfoVo);
                     boolean paymentResult = paymentInfoService.createPaymentInfo(paymentInfoVo);
-                    if (paymentResult && updateOrderStatus && updateWalletBalance) {
+                    if (paymentResult && updateOrderStatus && addWalletBalance) {
                         log.info("【支付回调通知处理成功】");
                         return WxPayNotifyResponse.success("支付成功");
                     }

@@ -31,7 +31,7 @@ public class UserUpdateRequest implements Serializable {
     /**
      * 性别
      */
-    private Integer gender;
+    private String gender;
     /**
      * 用户角色: user, admin
      */
@@ -40,4 +40,9 @@ public class UserUpdateRequest implements Serializable {
      * 密码
      */
     private String userPassword;
+
+    /**
+     * 钱包余额（分）
+     */
+    private Integer balance;
 }

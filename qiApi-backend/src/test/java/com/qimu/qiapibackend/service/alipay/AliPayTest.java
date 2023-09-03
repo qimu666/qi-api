@@ -75,7 +75,7 @@ public class AliPayTest {
             // 订单已支付更新商户端的订单状态
             productOrderService.updateOrderStatusByOrderNo(OutTradeNo, SUCCESS.getValue());
             // 补发积分到用户钱包
-            // userService.updateWalletBalance(productOrder.getUserId(), productOrder.getAddPoints());
+            // userService.addWalletBalance(productOrder.getUserId(), productOrder.getAddPoints());
             // paymentInfoService.createPaymentInfo(paymentInfoVo);
             // 保存支付记录
             // PaymentInfoVo paymentInfoVo = new PaymentInfoVo();

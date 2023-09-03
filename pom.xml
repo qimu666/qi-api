@@ -11,6 +11,7 @@
     <description>柒木接口</description>
 
     <properties>
+        <spring-boot-dependencies.version>2.7.0</spring-boot-dependencies.version>
         <java.version>1.8</java.version>
         <mybatis-plus-boot-starter.version>3.5.1</mybatis-plus-boot-starter.version>
         <gson.version>2.9.0</gson.version>
@@ -30,6 +31,7 @@
         <module>qiApi-backend</module>
         <module>qiApi-sdk</module>
         <module>qiApi-interface</module>
+        <module>qiApi-gateway</module>
     </modules>
 
     <dependencyManagement>
@@ -38,7 +40,7 @@
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
-                <version>2.7.0</version>
+                <version>${spring-boot-dependencies.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -61,12 +63,6 @@
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-boot-starter</artifactId>
                 <version>${mybatis-plus-boot-starter.version}</version>
-            </dependency>
-            <!-- https://mvnrepository.com/artifact/cn.springboot/best-pay-sdk -->
-            <dependency>
-                <groupId>cn.springboot</groupId>
-                <artifactId>best-pay-sdk</artifactId>
-                <version>${best-pay-sdk.version}</version>
             </dependency>
             <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
             <dependency>
@@ -103,7 +99,6 @@
                 <version>${junit.version}</version>
                 <scope>test</scope>
             </dependency>
-
             <dependency>
                 <groupId>cn.hutool</groupId>
                 <artifactId>hutool-all</artifactId>
