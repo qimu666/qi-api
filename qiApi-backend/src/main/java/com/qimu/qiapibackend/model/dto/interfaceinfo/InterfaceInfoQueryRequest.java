@@ -29,6 +29,10 @@ public class InterfaceInfoQueryRequest extends PageRequest implements Serializab
      */
     private Long userId;
     /**
+     * 减少积分个数
+     */
+    private Integer reduceScore;
+    /**
      * 请求方法
      */
     private String method;

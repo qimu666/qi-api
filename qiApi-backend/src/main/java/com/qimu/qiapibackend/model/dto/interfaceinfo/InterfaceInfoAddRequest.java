@@ -17,10 +17,7 @@ public class InterfaceInfoAddRequest implements Serializable {
      * 接口名称
      */
     private String name;
-    /**
-     * 金额(分),调用接口扣费金额
-     */
-    private Integer total;
+
     /**
      * 接口地址
      */
@@ -29,6 +26,10 @@ public class InterfaceInfoAddRequest implements Serializable {
      * 请求方法
      */
     private String method;
+    /**
+     * 减少积分个数
+     */
+    private Integer reduceScore;
     /**
      * 接口请求参数
      */

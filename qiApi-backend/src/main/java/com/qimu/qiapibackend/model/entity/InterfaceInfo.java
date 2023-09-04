@@ -32,10 +32,6 @@ public class InterfaceInfo implements Serializable {
     private String url;
 
     /**
-     * 金额(分),调用接口扣费金额
-     */
-    private Integer total;
-    /**
      * 发布人
      */
     private Long userId;
@@ -55,6 +51,10 @@ public class InterfaceInfo implements Serializable {
      * 请求示例
      */
     private String requestExample;
+    /**
+     * 减少积分个数
+     */
+    private Integer reduceScore;
     /**
      * 请求头
      */

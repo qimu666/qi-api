@@ -28,9 +28,10 @@ public class InterfaceInfoUpdateRequest implements Serializable {
      */
     private String method;
     /**
-     * 金额(分),调用接口扣费金额
+     * 调用接口扣费个数
      */
-    private Integer total;
+    private Integer reduceScore;
+
     /**
      * 接口请求参数
      */

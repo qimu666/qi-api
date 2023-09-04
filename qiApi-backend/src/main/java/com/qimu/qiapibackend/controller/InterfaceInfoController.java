@@ -198,6 +198,7 @@ public class InterfaceInfoController {
         String method = interfaceInfoQueryRequest.getMethod();
         String description = interfaceInfoQueryRequest.getDescription();
         Integer status = interfaceInfoQueryRequest.getStatus();
+        Integer reduceScore = interfaceInfoQueryRequest.getReduceScore();
 
         // 限制爬虫
         if (size > 50) {
@@ -205,18 +206,19 @@ public class InterfaceInfoController {
         }
         QueryWrapper<InterfaceInfo> queryWrapper = new QueryWrapper<>();
         queryWrapper.like(StringUtils.isNotBlank(name), "name", name)
-                .or()
                 .like(StringUtils.isNotBlank(description), "description", description)
-                .like(StringUtils.isNotBlank(method), "method", method)
                 .like(StringUtils.isNotBlank(url), "url", url)
-                .eq(ObjectUtils.isNotEmpty(status), "status", status);
+                .eq(StringUtils.isNotBlank(method), "method", method)
+                .eq(ObjectUtils.isNotEmpty(status), "status", status)
+                .eq(ObjectUtils.isNotEmpty(reduceScore), "reduceScore", reduceScore);
+
         queryWrapper.orderBy(StringUtils.isNotBlank(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
         Page<InterfaceInfo> interfaceInfoPage = interfaceInfoService.page(new Page<>(current, size), queryWrapper);
         return ResultUtils.success(interfaceInfoPage);
     }
 
     /**
-     * 分页获取列表
+     * 按搜索文本页查询数据
      *
      * @param interfaceInfoQueryRequest 接口信息查询请求
      * @param request                   请求
@@ -321,7 +323,6 @@ public class InterfaceInfoController {
         UserVO loginUser = userService.getLoginUser(request);
         String accessKey = loginUser.getAccessKey();
         String secretKey = loginUser.getSecretKey();
-
 
         try {
             QiApiClient qiApiClient = new QiApiClient(accessKey, secretKey);

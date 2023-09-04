@@ -32,6 +32,7 @@ import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.qimu.qiapibackend.constant.EmailConstant.*;
@@ -135,6 +136,13 @@ public class UserController {
      */
     @GetMapping("/getCaptcha")
     public BaseResponse<Boolean> getCaptcha(String emailAccount) {
+        if (StringUtils.isBlank(emailAccount)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        String emailPattern = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
+        if (!Pattern.matches(emailPattern, emailAccount)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "不合法的邮箱地址！");
+        }
         String captcha = RandomUtil.randomNumbers(6);
         try {
             sendEmail(emailAccount, captcha);
@@ -147,7 +155,6 @@ public class UserController {
     }
 
     private void sendEmail(String emailAccount, String captcha) throws MessagingException {
-
         MimeMessage message = mailSender.createMimeMessage();
         // 邮箱发送内容组成
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
@@ -325,16 +332,26 @@ public class UserController {
      */
     @GetMapping("/list/page")
     public BaseResponse<Page<UserVO>> listUserByPage(UserQueryRequest userQueryRequest, HttpServletRequest request) {
-        long current = 1;
-        long size = 10;
         User userQuery = new User();
-        if (userQueryRequest != null) {
-            BeanUtils.copyProperties(userQueryRequest, userQuery);
-            current = userQueryRequest.getCurrent();
-            size = userQueryRequest.getPageSize();
+        if (userQueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>(userQuery);
-        Page<User> userPage = userService.page(new Page<>(current, size), queryWrapper);
+
+        BeanUtils.copyProperties(userQueryRequest, userQuery);
+
+        String userName = userQueryRequest.getUserName();
+        String userAccount = userQueryRequest.getUserAccount();
+        String gender = userQueryRequest.getGender();
+        String userRole = userQueryRequest.getUserRole();
+        long current = userQueryRequest.getCurrent();
+        long pageSize = userQueryRequest.getPageSize();
+
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.like(StringUtils.isNotBlank(userName), "userName", userName)
+                .eq(StringUtils.isNotBlank(userAccount), "userAccount", userAccount)
+                .eq(StringUtils.isNotBlank(gender), "gender", gender)
+                .eq(ObjectUtils.isNotEmpty(userRole), "userRole", userRole);
+        Page<User> userPage = userService.page(new Page<>(current, pageSize), queryWrapper);
         Page<UserVO> userVoPage = new PageDTO<>(userPage.getCurrent(), userPage.getSize(), userPage.getTotal());
         List<UserVO> userVOList = userPage.getRecords().stream().map(user -> {
             UserVO userVO = new UserVO();

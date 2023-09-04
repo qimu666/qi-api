@@ -198,16 +198,20 @@ public class ProductInfoController {
         long current = productInfoQueryRequest.getCurrent();
         String description = productInfoQueryRequest.getDescription();
         String productType = productInfoQueryRequest.getProductType();
-
+        Integer addPoints = productInfoQueryRequest.getAddPoints();
+        Integer total = productInfoQueryRequest.getTotal();
         // 限制爬虫
         if (size > 50) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         QueryWrapper<ProductInfo> queryWrapper = new QueryWrapper<>();
         queryWrapper.like(StringUtils.isNotBlank(name), "name", name)
-                .or()
                 .like(StringUtils.isNotBlank(description), "description", description)
-                .eq(ObjectUtils.isNotEmpty(productType), "productType", productType);
+                .eq(ObjectUtils.isNotEmpty(productType), "productType", productType)
+                .eq(ObjectUtils.isNotEmpty(productType), "productType", productType)
+                .eq(ObjectUtils.isNotEmpty(productType), "productType", productType)
+                .eq(ObjectUtils.isNotEmpty(addPoints), "addPoints", addPoints)
+                .eq(ObjectUtils.isNotEmpty(total), "total", total);
         // 根据金额升序排列
         queryWrapper.orderByAsc("total");
         Page<ProductInfo> productInfoPage = productInfoService.page(new Page<>(current, size), queryWrapper);

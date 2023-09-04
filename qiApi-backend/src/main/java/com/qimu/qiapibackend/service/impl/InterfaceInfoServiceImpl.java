@@ -24,7 +24,6 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         String name = interfaceInfo.getName();
         String url = interfaceInfo.getUrl();
         Long userId = interfaceInfo.getUserId();
-        Integer total = interfaceInfo.getTotal();
         String method = interfaceInfo.getMethod();
         String requestParams = interfaceInfo.getRequestParams();
         String description = interfaceInfo.getDescription();
@@ -32,12 +31,23 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         String requestHeader = interfaceInfo.getRequestHeader();
         String responseHeader = interfaceInfo.getResponseHeader();
         Integer status = interfaceInfo.getStatus();
+        Integer reduceScore = interfaceInfo.getReduceScore();
         // 创建时，所有参数必须非空
         if (add) {
             if (StringUtils.isAnyBlank(name, url, method)) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR);
             }
         }
+        if (reduceScore < 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "扣除积分个数不能为负数");
+        }
+        if (StringUtils.isNotBlank(name) && name.length() > 60) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "接口名称过长");
+        }
+        if (StringUtils.isNotBlank(description) && description.length() > 100) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "接口描述过长");
+        }
+        // todo 补充请求头和响应头校验
     }
 }
 
