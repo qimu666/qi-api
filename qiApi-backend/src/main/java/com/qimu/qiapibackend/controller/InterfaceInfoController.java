@@ -3,6 +3,8 @@ package com.qimu.qiapibackend.controller;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.qimu.qiapibackend.annotation.AuthCheck;
 import com.qimu.qiapibackend.common.*;
 import com.qimu.qiapibackend.constant.CommonConstant;
@@ -12,9 +14,11 @@ import com.qimu.qiapibackend.model.entity.InterfaceInfo;
 import com.qimu.qiapibackend.model.enums.InterfaceStatusEnum;
 import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.InterfaceInfoService;
+import com.qimu.qiapibackend.service.UserInterfaceInvokeService;
 import com.qimu.qiapibackend.service.UserService;
 import com.qimu.qiapisdk.client.QiApiClient;
 import com.qimu.qiapisdk.model.QiApiRequest;
+import com.qimu.qiapisdk.model.User;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -37,15 +41,14 @@ import static com.qimu.qiapibackend.constant.UserConstant.ADMIN_ROLE;
 @RequestMapping("/interfaceInfo")
 @Slf4j
 public class InterfaceInfoController {
-
     @Resource
     private InterfaceInfoService interfaceInfoService;
-
     @Resource
     private UserService userService;
-
     @Resource
     private QiApiClient qiApiClient;
+    @Resource
+    private UserInterfaceInvokeService userInterfaceInvokeService;
 
     // region 增删改查
 
@@ -211,7 +214,6 @@ public class InterfaceInfoController {
                 .eq(StringUtils.isNotBlank(method), "method", method)
                 .eq(ObjectUtils.isNotEmpty(status), "status", status)
                 .eq(ObjectUtils.isNotEmpty(reduceScore), "reduceScore", reduceScore);
-
         queryWrapper.orderBy(StringUtils.isNotBlank(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
         Page<InterfaceInfo> interfaceInfoPage = interfaceInfoService.page(new Page<>(current, size), queryWrapper);
         return ResultUtils.success(interfaceInfoPage);
@@ -308,10 +310,22 @@ public class InterfaceInfoController {
      * @return {@link BaseResponse}<{@link Object}>
      */
     @PostMapping("/invoke")
+    @Transactional(rollbackFor = Exception.class)
     public BaseResponse<Object> invokeInterface(@RequestBody InvokeRequest invokeRequest, HttpServletRequest request) {
         if (ObjectUtils.anyNull(invokeRequest, invokeRequest.getId()) || invokeRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        // 构建请求参数
+        List<InvokeRequest.Field> fieldList = invokeRequest.getFieldList();
+        String requestParams = "{}";
+        if (fieldList != null && fieldList.size() > 0) {
+            JsonObject jsonObject = new JsonObject();
+            for (InvokeRequest.Field field : fieldList) {
+                jsonObject.addProperty(field.getFieldName(), field.getValue());
+            }
+            requestParams = new Gson().toJson(jsonObject);
+        }
+
         Long id = invokeRequest.getId();
         InterfaceInfo interfaceInfo = interfaceInfoService.getById(id);
         if (interfaceInfo == null) {
@@ -323,11 +337,17 @@ public class InterfaceInfoController {
         UserVO loginUser = userService.getLoginUser(request);
         String accessKey = loginUser.getAccessKey();
         String secretKey = loginUser.getSecretKey();
-
         try {
             QiApiClient qiApiClient = new QiApiClient(accessKey, secretKey);
-            QiApiRequest qiApiRequest = JSONUtil.toBean(invokeRequest.getUserRequestParams(), QiApiRequest.class);
-            qiApiClient.getNameByJsonPost(qiApiRequest);
+            QiApiRequest qiApiRequest = JSONUtil.toBean(requestParams, QiApiRequest.class);
+            com.qimu.qiapisdk.common.BaseResponse<User> baseResponse = qiApiClient.getNameByJsonPost(qiApiRequest);
+            if (baseResponse.getCode() != 0) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "调用失败");
+            }
+            boolean invoke = userInterfaceInvokeService.invoke(interfaceInfo, loginUser);
+            if (!invoke) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "调用失败");
+            }
             return ResultUtils.success(qiApiClient.getNameByJsonPost(qiApiRequest));
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, e.getMessage());

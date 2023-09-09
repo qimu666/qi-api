@@ -5,9 +5,10 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * 创建请求
- *
- * @TableName product
+ * @Author: QiMu
+ * @Date: 2023/09/04 11:33:26
+ * @Version: 1.0
+ * @Description: 创建请求
  */
 @Data
 public class InterfaceInfoAddRequest implements Serializable {

@@ -7,9 +7,10 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
- * 用户
- *
- * @TableName user
+ * @Author: QiMu
+ * @Date: 2023/09/04 11:31:52
+ * @Version: 1.0
+ * @Description: 用户
  */
 @TableName(value = "user")
 @Data
@@ -29,6 +30,11 @@ public class User implements Serializable {
      * 账号
      */
     private String userAccount;
+
+    /**
+     * 账号状态（0- 正常 1- 封号）
+     */
+    private Integer status;
 
     /**
      * 邀请码

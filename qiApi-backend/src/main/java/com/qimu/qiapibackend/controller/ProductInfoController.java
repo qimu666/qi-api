@@ -3,10 +3,7 @@ package com.qimu.qiapibackend.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.qimu.qiapibackend.annotation.AuthCheck;
-import com.qimu.qiapibackend.common.BaseResponse;
-import com.qimu.qiapibackend.common.DeleteRequest;
-import com.qimu.qiapibackend.common.ErrorCode;
-import com.qimu.qiapibackend.common.ResultUtils;
+import com.qimu.qiapibackend.common.*;
 import com.qimu.qiapibackend.constant.CommonConstant;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.model.dto.productinfo.ProductInfoAddRequest;
@@ -14,6 +11,7 @@ import com.qimu.qiapibackend.model.dto.productinfo.ProductInfoQueryRequest;
 import com.qimu.qiapibackend.model.dto.productinfo.ProductInfoSearchTextRequest;
 import com.qimu.qiapibackend.model.dto.productinfo.ProductInfoUpdateRequest;
 import com.qimu.qiapibackend.model.entity.ProductInfo;
+import com.qimu.qiapibackend.model.enums.ProductInfoStatusEnum;
 import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.ProductInfoService;
 import com.qimu.qiapibackend.service.UserService;
@@ -27,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.qimu.qiapibackend.constant.UserConstant.ADMIN_ROLE;
 
@@ -215,6 +214,12 @@ public class ProductInfoController {
         // 根据金额升序排列
         queryWrapper.orderByAsc("total");
         Page<ProductInfo> productInfoPage = productInfoService.page(new Page<>(current, size), queryWrapper);
+        // 不是管理员只能查看已经上线的
+        if (!userService.isAdmin(request)) {
+            List<ProductInfo> productInfoList = productInfoPage.getRecords().stream()
+                    .filter(productInfo -> productInfo.getStatus().equals(ProductInfoStatusEnum.ONLINE.getValue())).collect(Collectors.toList());
+            productInfoPage.setRecords(productInfoList);
+        }
         return ResultUtils.success(productInfoPage);
     }
 
@@ -245,7 +250,55 @@ public class ProductInfoController {
                 .like(StringUtils.isNotBlank(searchText), "description", searchText);
         queryWrapper.orderBy(StringUtils.isNotBlank(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
         Page<ProductInfo> productInfoPage = productInfoService.page(new Page<>(current, size), queryWrapper);
+        // 不是管理员只能查看已经上线的
+        if (!userService.isAdmin(request)) {
+            List<ProductInfo> productInfoList = productInfoPage.getRecords().stream()
+                    .filter(productInfo -> productInfo.getStatus().equals(ProductInfoStatusEnum.ONLINE.getValue())).collect(Collectors.toList());
+            productInfoPage.setRecords(productInfoList);
+        }
         return ResultUtils.success(productInfoPage);
+    }
+
+    /**
+     * 发布
+     *
+     * @param idRequest id请求
+     * @return {@link BaseResponse}<{@link Boolean}>
+     */
+    @AuthCheck(mustRole = ADMIN_ROLE)
+    @PostMapping("/online")
+    public BaseResponse<Boolean> onlineProductInfo(@RequestBody IdRequest idRequest) {
+        if (ObjectUtils.anyNull(idRequest, idRequest.getId()) || idRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Long id = idRequest.getId();
+        ProductInfo productInfo = productInfoService.getById(id);
+        if (productInfo == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        productInfo.setStatus(ProductInfoStatusEnum.ONLINE.getValue());
+        return ResultUtils.success(productInfoService.updateById(productInfo));
+    }
+
+    /**
+     * 下线
+     *
+     * @param idRequest id请求
+     * @return {@link BaseResponse}<{@link Boolean}>
+     */
+    @PostMapping("/offline")
+    @AuthCheck(mustRole = ADMIN_ROLE)
+    public BaseResponse<Boolean> offlineProductInfo(@RequestBody IdRequest idRequest) {
+        if (ObjectUtils.anyNull(idRequest, idRequest.getId()) || idRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Long id = idRequest.getId();
+        ProductInfo productInfo = productInfoService.getById(id);
+        if (productInfo == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        productInfo.setStatus(ProductInfoStatusEnum.OFFLINE.getValue());
+        return ResultUtils.success(productInfoService.updateById(productInfo));
     }
     // endregion
 }

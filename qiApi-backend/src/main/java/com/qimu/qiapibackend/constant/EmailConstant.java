@@ -31,7 +31,7 @@ public interface EmailConstant {
     /**
      * 电子邮件标题
      */
-    String EMAIL_TITLE = "柒木接口";
+    String EMAIL_TITLE = "Qi-API 接口开放平台";
 
     /**
      * 电子邮件标题英语

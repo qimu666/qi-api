@@ -9,14 +9,23 @@ import com.github.binarywang.wxpay.bean.request.WxPayUnifiedOrderV3Request;
 import com.github.binarywang.wxpay.bean.request.WxPayUnifiedOrderV3Request.Amount;
 import com.github.binarywang.wxpay.bean.result.enums.TradeTypeEnum;
 import com.github.binarywang.wxpay.service.WxPayService;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.qimu.qiapibackend.common.ErrorCode;
+import com.qimu.qiapibackend.exception.BusinessException;
+import com.qimu.qiapibackend.model.entity.InterfaceInfo;
 import com.qimu.qiapibackend.model.entity.User;
+import com.qimu.qiapibackend.model.vo.UserVO;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.ObjectUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.BeanUtils;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.annotation.Resource;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * 用户服务测试
@@ -49,11 +58,27 @@ class UserServiceTest {
     private WxPayService wxPayService;
     @Resource
     private UserService userService;
+    @Resource
+    private InterfaceInfoService interfaceInfoService;
+    @Resource
+    private UserInterfaceInvokeService userInterfaceInvokeService;
 
     @Test
     void getCaptcha() {
         String captcha = RandomUtil.randomNumbers(6);
         System.err.println(captcha);
+    }
+
+    @Test
+    void invoke() {
+        InterfaceInfo interfaceInfo = interfaceInfoService.getById(1697274658264342530L);
+        User user = userService.getById(1691069533871013889L);
+        UserVO userVO = new UserVO();
+        BeanUtils.copyProperties(user, userVO);
+        // userVO.setBalance(0);
+        // userVO.setStatus(UserAccountStatusEnum.BAN.getValue());
+        boolean invoke = userInterfaceInvokeService.invoke(interfaceInfo, userVO);
+        Assertions.assertTrue(invoke);
     }
 
     @Test
@@ -68,6 +93,18 @@ class UserServiceTest {
         System.err.println(format);
 
         // System.err.println(RandomUtil.randomNumbers(20));
+    }
+
+    @Test
+    void header() {
+        InterfaceInfo interfaceInfo = interfaceInfoService.getById(1697274658264342530L);
+        interfaceInfo.setRequestHeader(null);
+        String requestHeader = interfaceInfo.getRequestHeader();
+        Map<String, String> headerMap = new Gson().fromJson(requestHeader, new TypeToken<Map<String, String>>() {
+        }.getType());
+        if ((ObjectUtils.anyNull(headerMap, headerMap.get("Content-Type"))) || !headerMap.get("Content-Type").equals("application/json")) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求头/响应头必须是JSON格式");
+        }
     }
 
     @SneakyThrows

@@ -7,13 +7,11 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.plugins.pagination.PageDTO;
 import com.qimu.qiapibackend.annotation.AuthCheck;
-import com.qimu.qiapibackend.common.BaseResponse;
-import com.qimu.qiapibackend.common.DeleteRequest;
-import com.qimu.qiapibackend.common.ErrorCode;
-import com.qimu.qiapibackend.common.ResultUtils;
+import com.qimu.qiapibackend.common.*;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.model.dto.user.*;
 import com.qimu.qiapibackend.model.entity.User;
+import com.qimu.qiapibackend.model.enums.UserAccountStatusEnum;
 import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -161,7 +159,7 @@ public class UserController {
         helper.setSubject(EMAIL_SUBJECT);
         helper.setText(buildEmailContent(captcha), true);
         helper.setTo(emailAccount);
-        helper.setFrom("柒木接口" + '<' + EMAIL_FROM + '>');
+        helper.setFrom("Qi-API 接口开放平台" + '<' + EMAIL_FROM + '>');
         mailSender.send(message);
     }
 
@@ -255,7 +253,8 @@ public class UserController {
 
         // 管理员才能操作
         boolean adminOperation = ObjectUtils.isNotEmpty(userUpdateRequest.getBalance())
-                || StringUtils.isNoneBlank(userUpdateRequest.getUserRole()) || StringUtils.isNoneBlank(userUpdateRequest.getUserPassword());
+                || StringUtils.isNoneBlank(userUpdateRequest.getUserRole())
+                || StringUtils.isNoneBlank(userUpdateRequest.getUserPassword());
         // 校验是否登录
         UserVO loginUser = userService.getLoginUser(request);
         // 处理管理员业务,不是管理员抛异常
@@ -395,6 +394,48 @@ public class UserController {
         BeanUtils.copyProperties(invitationCodeUser, userVO);
         return ResultUtils.success(userVO);
     }
-    // endregion
 
+    /**
+     * 解封
+     *
+     * @param idRequest id请求
+     * @return {@link BaseResponse}<{@link Boolean}>
+     */
+    @AuthCheck(mustRole = ADMIN_ROLE)
+    @PostMapping("/normal")
+    public BaseResponse<Boolean> normalUser(@RequestBody IdRequest idRequest) {
+        if (ObjectUtils.anyNull(idRequest, idRequest.getId()) || idRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Long id = idRequest.getId();
+        User user = userService.getById(id);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        user.setStatus(UserAccountStatusEnum.NORMAL.getValue());
+        return ResultUtils.success(userService.updateById(user));
+    }
+
+    /**
+     * 封号
+     *
+     * @param idRequest id请求
+     * @param request   请求
+     * @return {@link BaseResponse}<{@link Boolean}>
+     */
+    @PostMapping("/ban")
+    @AuthCheck(mustRole = ADMIN_ROLE)
+    public BaseResponse<Boolean> banUser(@RequestBody IdRequest idRequest, HttpServletRequest request) {
+        if (ObjectUtils.anyNull(idRequest, idRequest.getId()) || idRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Long id = idRequest.getId();
+        User user = userService.getById(id);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        user.setStatus(UserAccountStatusEnum.BAN.getValue());
+        return ResultUtils.success(userService.updateById(user));
+    }
+    // endregion
 }

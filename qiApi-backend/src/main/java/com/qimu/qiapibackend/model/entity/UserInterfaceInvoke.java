@@ -8,13 +8,13 @@ import java.util.Date;
 
 /**
  * @Author: QiMu
- * @Date: 2023/08/25 02:54:05
+ * @Date: 2023/09/04 11:30:31
  * @Version: 1.0
- * @Description: 产品信息
+ * @Description: 用户接口调用表
  */
-@TableName(value = "product_info")
+@TableName(value = "user_interface_invoke")
 @Data
-public class ProductInfo implements Serializable {
+public class UserInterfaceInvoke implements Serializable {
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
     /**
@@ -23,37 +23,21 @@ public class ProductInfo implements Serializable {
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     /**
-     * 产品名称
-     */
-    private String name;
-    /**
-     * 状态（0- 默认下线 1- 上线）
-     */
-    private Integer status;
-    /**
-     * 增加积分个数
-     */
-    private Integer addPoints;
-    /**
-     * 产品描述
-     */
-    private String description;
-    /**
-     * 创建人
+     * 调用人id
      */
     private Long userId;
     /**
-     * 金额(分)
+     * 接口id
      */
-    private Integer total;
+    private Long interfaceId;
     /**
-     * 产品类型（VIP-会员 RECHARGE-充值）
+     * 总调用次数
      */
-    private String productType;
+    private Long totalInvokes;
     /**
-     * 过期时间
+     * 调用状态（0- 正常 1- 封号）
      */
-    private Date expirationTime;
+    private Integer status;
     /**
      * 创建时间
      */

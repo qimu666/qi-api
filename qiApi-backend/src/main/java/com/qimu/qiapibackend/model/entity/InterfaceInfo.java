@@ -1,16 +1,16 @@
 package com.qimu.qiapibackend.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.qimu.qiapibackend.model.vo.UserVO;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
 
 /**
- * 接口信息
- *
- * @TableName interface_info
+ * @Author: QiMu
+ * @Date: 2023/09/04 11:31:33
+ * @Version: 1.0
+ * @Description: 接口信息
  */
 @TableName(value = "interface_info")
 @Data
@@ -40,6 +40,10 @@ public class InterfaceInfo implements Serializable {
      */
     private String method;
     /**
+     * 总调用次数
+     */
+    private Long totalInvokes;
+    /**
      * 接口请求参数
      */
     private String requestParams;
@@ -55,6 +59,10 @@ public class InterfaceInfo implements Serializable {
      * 减少积分个数
      */
     private Integer reduceScore;
+    /**
+     * 接口头像
+     */
+    private String avatarUrl;
     /**
      * 请求头
      */
@@ -80,7 +88,4 @@ public class InterfaceInfo implements Serializable {
      */
     @TableLogic
     private Integer isDelete;
-
-    @TableField(exist = false)
-    private UserVO userVO;
 }

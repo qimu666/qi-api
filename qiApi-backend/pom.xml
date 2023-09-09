@@ -12,7 +12,7 @@
     <artifactId>qiApi-backend</artifactId>
     <version>0.0.1</version>
     <name>qiApi-backend</name>
-    <description>柒木接口</description>
+    <description>Qi-API 接口开放平台</description>
 
     <dependencies>
         <dependency>

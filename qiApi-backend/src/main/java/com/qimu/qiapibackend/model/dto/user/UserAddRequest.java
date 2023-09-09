@@ -5,9 +5,10 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * 用户创建请求
- *
- * @author qimu
+ * @Author: QiMu
+ * @Date: 2023/09/04 11:34:01
+ * @Version: 1.0
+ * @Description: 用户创建请求
  */
 @Data
 public class UserAddRequest implements Serializable {

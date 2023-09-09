@@ -29,9 +29,9 @@ public class PayJob {
 
     /**
      * 微信订单确认
-     * 每30s查询一次超过5分钟过期的订单,并且未支付
+     * 每25s查询一次超过5分钟过期的订单,并且未支付
      */
-    @Scheduled(cron = "0/30 * * * * ?")
+    @Scheduled(cron = "0/25 * * * * ?")
     public void wxOrderConfirm() {
         List<ProductOrder> orderList = orderService.getNoPayOrderByDuration(5, false, WX.getValue());
         ProductOrderService productOrderService = orderService.getProductOrderServiceByPayType(WX.getValue());
@@ -48,9 +48,9 @@ public class PayJob {
 
     /**
      * 支付宝订单确认
-     * 每40s查询一次超过5分钟过期的订单,并且未支付
+     * 每20s查询一次超过5分钟过期的订单,并且未支付
      */
-    @Scheduled(cron = "0/40 * * * * ?")
+    @Scheduled(cron = "0/20 * * * * ?")
     public void aliPayOrderConfirm() {
         List<ProductOrder> orderList = orderService.getNoPayOrderByDuration(5, false, ALIPAY.getValue());
         ProductOrderService productOrderService = orderService.getProductOrderServiceByPayType(ALIPAY.getValue());

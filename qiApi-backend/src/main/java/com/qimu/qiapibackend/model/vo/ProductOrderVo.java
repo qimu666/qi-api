@@ -23,7 +23,6 @@ public class ProductOrderVo implements Serializable {
      */
     private String orderNo;
 
-
     /**
      * 支付类型
      */

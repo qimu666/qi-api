@@ -1,18 +1,25 @@
 package com.qimu.qiapibackend.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.qimu.qiapibackend.common.ErrorCode;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.mapper.InterfaceInfoMapper;
 import com.qimu.qiapibackend.model.entity.InterfaceInfo;
 import com.qimu.qiapibackend.service.InterfaceInfoService;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 /**
- * @author qimu
- * @description 针对表【interface_info(接口信息)】的数据库操作Service实现
- * @createDate 2023-08-11 13:14:10
+ * @Author: QiMu
+ * @Date: 2023/09/08 08:52:13
+ * @Version: 1.0
+ * @Description: 接口信息服务impl
  */
 @Service
 public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, InterfaceInfo> implements InterfaceInfoService {
@@ -38,16 +45,33 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
                 throw new BusinessException(ErrorCode.PARAMS_ERROR);
             }
         }
-        if (reduceScore < 0) {
+        if (ObjectUtils.isNotEmpty(reduceScore) && reduceScore < 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "扣除积分个数不能为负数");
         }
         if (StringUtils.isNotBlank(name) && name.length() > 60) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "接口名称过长");
         }
+
         if (StringUtils.isNotBlank(description) && description.length() > 100) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "接口描述过长");
         }
-        // todo 补充请求头和响应头校验
+    }
+
+
+    private void checkHeaders(String header) {
+        Map<String, String> headerHeaderMap = new Gson().fromJson(header, new TypeToken<Map<String, String>>() {
+        }.getType());
+        if ((ObjectUtils.anyNull(headerHeaderMap, headerHeaderMap.get("Content-Type"))) || !"application/json".equals(headerHeaderMap.get("Content-Type"))) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "响应头必须是JSON格式");
+        }
+    }
+
+    @Override
+    public boolean updateTotalInvokes(long interfaceId) {
+        LambdaUpdateWrapper<InterfaceInfo> invokeLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        invokeLambdaUpdateWrapper.eq(InterfaceInfo::getId, interfaceId);
+        invokeLambdaUpdateWrapper.setSql("totalInvokes = totalInvokes + 1");
+        return this.update(invokeLambdaUpdateWrapper);
     }
 }
 

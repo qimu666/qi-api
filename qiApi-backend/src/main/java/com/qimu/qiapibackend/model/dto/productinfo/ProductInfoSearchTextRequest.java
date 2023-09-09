@@ -8,9 +8,9 @@ import java.io.Serializable;
 
 /**
  * @Author: QiMu
- * @Date: 2023年08月19日 10:10
+ * @Date: 2023/09/04 11:33:48
  * @Version: 1.0
- * @Description:
+ * @Description: 产品信息搜索文本请求
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

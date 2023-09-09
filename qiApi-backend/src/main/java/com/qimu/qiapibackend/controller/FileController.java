@@ -35,7 +35,6 @@ import java.util.Arrays;
 @RequestMapping("/file")
 @Slf4j
 public class FileController {
-
     final long ONE_M = 1024 * 1024L;
     @Resource
     private UserService userService;

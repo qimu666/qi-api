@@ -23,6 +23,10 @@ public enum ErrorCode {
      */
     NO_AUTH_ERROR(40101, "无权限"),
     /**
+     * 账号已封禁
+     */
+    PROHIBITED(40001, "账号已封禁"),
+    /**
      * 请求数据不存在
      */
     NOT_FOUND_ERROR(40400, "请求数据不存在"),

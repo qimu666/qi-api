@@ -28,6 +28,10 @@ public class UserVO implements Serializable {
     private String invitationCode;
 
     /**
+     * 账号状态（0- 正常 1- 封号）
+     */
+    private Integer status;
+    /**
      * 钱包余额（分）
      */
     private Integer balance;

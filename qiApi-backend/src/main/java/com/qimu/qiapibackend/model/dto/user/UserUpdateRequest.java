@@ -5,9 +5,10 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * 用户更新请求
- *
- * @author qimu
+ * @Author: QiMu
+ * @Date: 2023/09/04 11:34:24
+ * @Version: 1.0
+ * @Description: 用户更新请求
  */
 @Data
 public class UserUpdateRequest implements Serializable {
@@ -36,6 +37,10 @@ public class UserUpdateRequest implements Serializable {
      * 用户角色: user, admin
      */
     private String userRole;
+    /**
+     * 账号状态（0- 正常 1- 封号）
+     */
+    private Integer status;
     /**
      * 密码
      */

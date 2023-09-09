@@ -37,6 +37,8 @@ public class QiApiClient {
      */
     private String secretKey;
 
+    public static final String GATEWAY_HOST = "http://localhost:8090/api";
+
     /**
      * 被json职位名称
      *
@@ -44,7 +46,7 @@ public class QiApiClient {
      * @return {@link BaseResponse}<{@link String}>
      */
     public BaseResponse<User> getNameByJsonPost(QiApiRequest qiApiRequest) {
-        HttpResponse httpResponse = HttpRequest.post("http://localhost:8081/name/json")
+        HttpResponse httpResponse = HttpRequest.post(GATEWAY_HOST + "/name/json")
                 .addHeaders(getHeaders(JSONUtil.toJsonStr(qiApiRequest)))
                 .body(JSONUtil.toJsonStr(qiApiRequest))
                 .execute();

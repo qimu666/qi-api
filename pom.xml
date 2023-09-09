@@ -8,8 +8,8 @@
     <artifactId>qiApi</artifactId>
     <version>0.0.1</version>
     <name>qiApi</name>
-    <description>柒木接口</description>
-
+    <description>Qi-API 接口开放平台</description>
+    
     <properties>
         <spring-boot-dependencies.version>2.7.0</spring-boot-dependencies.version>
         <java.version>1.8</java.version>

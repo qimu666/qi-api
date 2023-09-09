@@ -17,9 +17,9 @@ public enum FileUploadBizEnum {
      */
     USER_AVATAR("用户头像", "user_avatar"),
     /**
-     * 队伍头像
+     * 接口头像
      */
-    TEAM_AVATAR("队伍头像", "team_avatar");
+    INTERFACE_AVATAR("接口头像", "interface_avatar");
 
     /**
      * 类型描述

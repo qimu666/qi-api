@@ -50,7 +50,7 @@ class QiApiInterfaceApplicationTests {
             helper.setSubject("验证码邮件");
             helper.setText(buildContent(String.valueOf(captcha)), true);
             helper.setTo("1924972446@qq.com");
-            helper.setFrom("柒木接口" + '<' + "2483482026@qq.com" + '>');
+            helper.setFrom("Qi-API 接口开放平台" + '<' + "2483482026@qq.com" + '>');
             mailSender.send(message);
         } catch (Exception e) {
             log.error("【发送失败】" + e.getMessage());

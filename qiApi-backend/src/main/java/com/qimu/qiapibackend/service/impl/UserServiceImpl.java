@@ -13,6 +13,7 @@ import com.qimu.qiapibackend.model.dto.user.UserEmailLoginRequest;
 import com.qimu.qiapibackend.model.dto.user.UserEmailRegisterRequest;
 import com.qimu.qiapibackend.model.dto.user.UserRegisterRequest;
 import com.qimu.qiapibackend.model.entity.User;
+import com.qimu.qiapibackend.model.enums.UserAccountStatusEnum;
 import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -153,7 +154,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userName.length() > 40) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "昵称过长");
         }
-
         String emailPattern = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
         if (!Pattern.matches(emailPattern, emailAccount)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "不合法的邮箱地址！");
@@ -162,7 +162,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (StringUtils.isBlank(cacheCaptcha)) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "验证码已过期,请重新获取");
         }
-
+        captcha = captcha.trim();
         if (!cacheCaptcha.equals(captcha)) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "验证码输入有误");
         }
@@ -247,6 +247,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             log.info("user login failed, userAccount cannot match userPassword");
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
         }
+        if (user.getStatus().equals(UserAccountStatusEnum.BAN.getValue())) {
+            throw new BusinessException(ErrorCode.PROHIBITED, "账号已封禁");
+        }
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO);
         // 3. 记录用户的登录态
@@ -277,23 +280,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (StringUtils.isBlank(cacheCaptcha)) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "验证码已过期,请重新获取");
         }
+        captcha = captcha.trim();
         if (!cacheCaptcha.equals(captcha)) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "验证码输入有误");
         }
-
         // 查询用户是否存在
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("userAccount", emailAccount);
         User user = userMapper.selectOne(queryWrapper);
-        // 用户不存在
+        // 用户存在
         if (user != null) {
+            if (user.getStatus().equals(UserAccountStatusEnum.BAN.getValue())) {
+                throw new BusinessException(ErrorCode.PROHIBITED, "账号已封禁");
+            }
             UserVO userVO = new UserVO();
             BeanUtils.copyProperties(user, userVO);
             // 3. 记录用户的登录态
             request.getSession().setAttribute(USER_LOGIN_STATE, userVO);
             return userVO;
         }
-
         User newUser = new User();
         newUser.setUserAccount(emailAccount);
         newUser.setInvitationCode(generateRandomString(8));
@@ -332,6 +337,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (user == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
+        if (user.getStatus().equals(UserAccountStatusEnum.BAN.getValue())) {
+            throw new BusinessException(ErrorCode.PROHIBITED, "账号已封禁");
+        }
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO);
         return userVO;
@@ -345,9 +353,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      */
     @Override
     public boolean isAdmin(HttpServletRequest request) {
-        // 仅管理员可查询
         Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
-        UserVO user = (UserVO) userObj;
+        UserVO currentUser = (UserVO) userObj;
+        if (currentUser == null || currentUser.getId() == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        // 从数据库查询（追求性能的话可以注释，直接走缓存）
+        long userId = currentUser.getId();
+        User user = this.getById(userId);
         return user != null && ADMIN_ROLE.equals(user.getUserRole());
     }
 
@@ -428,6 +441,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         LambdaUpdateWrapper<User> userLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
         userLambdaUpdateWrapper.eq(User::getId, userId);
         userLambdaUpdateWrapper.setSql("balance = balance + " + addPoints);
+        return this.update(userLambdaUpdateWrapper);
+    }
+
+    @Override
+    public boolean reduceWalletBalance(Long userId, Integer reduceScore) {
+        LambdaUpdateWrapper<User> userLambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        userLambdaUpdateWrapper.eq(User::getId, userId);
+        userLambdaUpdateWrapper.setSql("balance = balance - " + reduceScore);
         return this.update(userLambdaUpdateWrapper);
     }
 
