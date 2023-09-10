@@ -11,6 +11,7 @@ create table if not exists qi_api_db.user
     userName       varchar(256)                           null comment '用户昵称',
     userAccount    varchar(256)                           not null comment '账号',
     userAvatar     varchar(1024)                          null comment '用户头像',
+    email          varchar(256)                           null comment '邮箱',
     gender         varchar(10)                            null comment '性别 0-男 1-女',
     userRole       varchar(256) default 'user'            not null comment '用户角色：user / admin',
     userPassword   varchar(512)                           null comment '密码',

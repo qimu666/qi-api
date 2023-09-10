@@ -2,7 +2,7 @@ package com.qimu.qiapibackend.service.impl;
 
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.github.binarywang.wxpay.bean.notify.WxPayOrderNotifyV3Result;
+import com.github.binarywang.wxpay.bean.result.WxPayOrderQueryV3Result;
 import com.qimu.qiapibackend.mapper.PaymentInfoMapper;
 import com.qimu.qiapibackend.model.entity.PaymentInfo;
 import com.qimu.qiapibackend.model.vo.PaymentInfoVo;
@@ -26,8 +26,8 @@ public class PaymentInfoServiceImpl extends ServiceImpl<PaymentInfoMapper, Payme
         String tradeState = paymentInfoVo.getTradeState();
         String tradeStateDesc = paymentInfoVo.getTradeStateDesc();
         String successTime = paymentInfoVo.getSuccessTime();
-        WxPayOrderNotifyV3Result.Payer payer = paymentInfoVo.getPayer();
-        WxPayOrderNotifyV3Result.Amount amount = paymentInfoVo.getAmount();
+        WxPayOrderQueryV3Result.Payer payer = paymentInfoVo.getPayer();
+        WxPayOrderQueryV3Result.Amount amount = paymentInfoVo.getAmount();
 
         PaymentInfo paymentInfo = new PaymentInfo();
         paymentInfo.setOrderNo(paymentInfoVo.getOutTradeNo());

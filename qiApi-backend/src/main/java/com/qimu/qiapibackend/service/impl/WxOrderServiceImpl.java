@@ -16,16 +16,19 @@ import com.github.binarywang.wxpay.constant.WxPayConstants;
 import com.github.binarywang.wxpay.exception.WxPayException;
 import com.github.binarywang.wxpay.service.WxPayService;
 import com.qimu.qiapibackend.common.ErrorCode;
+import com.qimu.qiapibackend.config.EmailConfig;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.mapper.ProductOrderMapper;
 import com.qimu.qiapibackend.model.entity.ProductInfo;
 import com.qimu.qiapibackend.model.entity.ProductOrder;
+import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.vo.PaymentInfoVo;
 import com.qimu.qiapibackend.model.vo.ProductOrderVo;
 import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.PaymentInfoService;
 import com.qimu.qiapibackend.service.ProductOrderService;
 import com.qimu.qiapibackend.service.UserService;
+import com.qimu.qiapibackend.utils.EmailUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RLock;
@@ -34,11 +37,14 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
@@ -71,13 +77,24 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
 
     @Resource
     private WxPayService wxPayService;
-
+    @Resource
+    private EmailConfig emailConfig;
+    @Resource
+    private JavaMailSender mailSender;
     @Resource
     private UserService userService;
 
     @Resource
     private PaymentInfoService paymentInfoService;
 
+    /**
+     * 获取产品订单
+     *
+     * @param productId 产品id
+     * @param loginUser 登录用户
+     * @param payType   付款类型
+     * @return {@link ProductOrderVo}
+     */
     @Override
     public ProductOrderVo getProductOrder(Long productId, UserVO loginUser, String payType) {
         LambdaQueryWrapper<ProductOrder> lambdaQueryWrapper = new LambdaQueryWrapper<>();
@@ -97,6 +114,13 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
         return productOrderVo;
     }
 
+    /**
+     * 保存产品订单
+     *
+     * @param productId 产品id
+     * @param loginUser 登录用户
+     * @return {@link ProductOrderVo}
+     */
     @Override
     public ProductOrderVo saveProductOrder(Long productId, UserVO loginUser) {
 
@@ -155,6 +179,12 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
         }
     }
 
+    /**
+     * 更新产品订单
+     *
+     * @param productOrder 产品订单
+     * @return boolean
+     */
     @Override
     public boolean updateProductOrder(ProductOrder productOrder) {
         String codeUrl = productOrder.getCodeUrl();
@@ -165,6 +195,13 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
         return this.updateById(updateCodeUrl);
     }
 
+    /**
+     * 按订单号更新订单状态
+     *
+     * @param outTradeNo  外贸编号
+     * @param orderStatus 订单状态
+     * @return boolean
+     */
     @Override
     public boolean updateOrderStatusByOrderNo(String outTradeNo, String orderStatus) {
         ProductOrder productOrder = new ProductOrder();
@@ -174,6 +211,12 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
         return this.update(productOrder, lambdaQueryWrapper);
     }
 
+    /**
+     * 通过out trade no获得产品订单
+     *
+     * @param outTradeNo 外贸编号
+     * @return {@link ProductOrder}
+     */
     @Override
     public ProductOrder getProductOrderByOutTradeNo(String outTradeNo) {
         LambdaQueryWrapper<ProductOrder> lambdaQueryWrapper = new LambdaQueryWrapper<>();
@@ -185,7 +228,13 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
         return productOrder;
     }
 
+    /**
+     * 处理超时订单
+     *
+     * @param productOrder 产品订单
+     */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void processingTimedOutOrders(ProductOrder productOrder) {
         String orderNo = productOrder.getOrderNo();
         WxPayOrderQueryV3Request wxPayOrderQueryV3Request = new WxPayOrderQueryV3Request();
@@ -203,6 +252,18 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
                 PaymentInfoVo paymentInfoVo = new PaymentInfoVo();
                 BeanUtils.copyProperties(wxPayOrderQueryV3Result, paymentInfoVo);
                 paymentInfoService.createPaymentInfo(paymentInfoVo);
+                // 发送邮件
+                User user = userService.getById(productOrder.getUserId());
+                if (StringUtils.isNotBlank(user.getEmail())) {
+                    try {
+                        ProductOrder productOrderByOutTradeNo = this.getProductOrderByOutTradeNo(productOrder.getOrderNo());
+                        new EmailUtil().sendPaySuccessEmail(user.getEmail(), mailSender, emailConfig, productOrderByOutTradeNo.getOrderName(),
+                                String.valueOf(new BigDecimal(productOrderByOutTradeNo.getTotal()).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP)));
+                        log.info("发送邮件：{}，成功", user.getEmail());
+                    } catch (Exception e) {
+                        log.error("发送邮件：{}，失败：{}", user.getEmail(), e.getMessage());
+                    }
+                }
                 log.info("超时订单{},状态已更新", orderNo);
             }
             if (tradeState.equals(NOTPAY.getValue())) {
@@ -216,6 +277,13 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
         }
     }
 
+    /**
+     * 付款通知
+     *
+     * @param notifyData 通知数据
+     * @param request    要求
+     * @return {@link String}
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String doPaymentNotify(String notifyData, HttpServletRequest request) {
@@ -239,6 +307,17 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
                     redisTemplate.delete(QUERY_ORDER_STATUS + outTradeNo);
                     // 更新用户积分
                     boolean addWalletBalance = userService.addWalletBalance(productOrder.getUserId(), productOrder.getAddPoints());
+                    // 发送邮件
+                    User user = userService.getById(productOrder.getUserId());
+                    if (StringUtils.isNotBlank(user.getEmail())) {
+                        try {
+                            new EmailUtil().sendPaySuccessEmail(user.getEmail(), mailSender, emailConfig, productOrder.getOrderName(),
+                                    String.valueOf(new BigDecimal(productOrder.getTotal()).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP)));
+                            log.info("发送邮件：{}，成功", user.getEmail());
+                        } catch (Exception e) {
+                            log.error("发送邮件：{}，失败：{}", user.getEmail(), e.getMessage());
+                        }
+                    }
                     // 保存支付记录
                     PaymentInfoVo paymentInfoVo = new PaymentInfoVo();
                     BeanUtils.copyProperties(notifyResult, paymentInfoVo);

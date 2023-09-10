@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.plugins.pagination.PageDTO;
 import com.qimu.qiapibackend.annotation.AuthCheck;
 import com.qimu.qiapibackend.common.*;
+import com.qimu.qiapibackend.config.EmailConfig;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.model.dto.user.*;
 import com.qimu.qiapibackend.model.entity.User;
@@ -46,7 +47,8 @@ import static com.qimu.qiapibackend.utils.EmailUtil.buildEmailContent;
 @RequestMapping("/user")
 @Slf4j
 public class UserController {
-
+    @Resource
+    private EmailConfig emailConfig;
     @Resource
     private UserService userService;
 
@@ -110,6 +112,22 @@ public class UserController {
         return ResultUtils.success(user);
     }
 
+    /**
+     * 用户绑定电子邮件
+     *
+     * @param request              请求
+     * @param userBindEmailRequest 用户绑定电子邮件请求
+     * @return {@link BaseResponse}<{@link UserVO}>
+     */
+    @PostMapping("/bind/login")
+    public BaseResponse<UserVO> userBindEmail(@RequestBody UserBindEmailRequest userBindEmailRequest, HttpServletRequest request) {
+        if (userBindEmailRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        UserVO user = userService.userBindEmail(userBindEmailRequest, request);
+        return ResultUtils.success(user);
+    }
+
 
     /**
      * 用户电子邮件注册
@@ -157,9 +175,9 @@ public class UserController {
         // 邮箱发送内容组成
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
         helper.setSubject(EMAIL_SUBJECT);
-        helper.setText(buildEmailContent(captcha), true);
+        helper.setText(buildEmailContent(EMAIL_HTML_CONTENT_PATH, captcha), true);
         helper.setTo(emailAccount);
-        helper.setFrom("Qi-API 接口开放平台" + '<' + EMAIL_FROM + '>');
+        helper.setFrom(EMAIL_TITLE + '<' + emailConfig.getEmailFrom() + '>');
         mailSender.send(message);
     }
 

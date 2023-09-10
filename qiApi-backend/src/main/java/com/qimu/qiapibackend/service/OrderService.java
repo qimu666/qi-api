@@ -42,7 +42,6 @@ public interface OrderService {
     ProductOrderVo createOrderByPayType(Long productId, String payType, UserVO loginUser);
 
     /**
-     * 按持续时间获得无支付指令
      * 按持续时间获得未支付订单
      *
      * @param minutes 分钟

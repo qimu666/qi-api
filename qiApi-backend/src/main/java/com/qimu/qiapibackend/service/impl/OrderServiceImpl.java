@@ -87,7 +87,7 @@ public class OrderServiceImpl implements OrderService {
         if (StringUtils.isNotBlank(payType)) {
             productOrderLambdaQueryWrapper.eq(ProductOrder::getPayType, payType);
         }
-        // 大于5分钟表示删除
+        // 删除
         if (remove) {
             productOrderLambdaQueryWrapper.or().eq(ProductOrder::getStatus, PaymentStatusEnum.CLOSED.getValue());
         }

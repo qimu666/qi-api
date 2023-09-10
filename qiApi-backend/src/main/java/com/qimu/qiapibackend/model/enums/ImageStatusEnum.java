@@ -9,7 +9,7 @@ public enum ImageStatusEnum {
     /**
      * 成功
      */
-    SUCCESS("success", "success"),
+    SUCCESS("success", "done"),
     /**
      * 参数错误
      */

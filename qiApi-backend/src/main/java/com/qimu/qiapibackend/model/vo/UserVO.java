@@ -6,9 +6,10 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
- * 用户视图
- *
- * @TableName user
+ * @Author: QiMu
+ * @Date: 2023/09/10 09:59:28
+ * @Version: 1.0
+ * @Description: 用户视图
  */
 @Data
 public class UserVO implements Serializable {
@@ -21,6 +22,10 @@ public class UserVO implements Serializable {
      * 用户昵称
      */
     private String userName;
+    /**
+     * 用户昵称
+     */
+    private String email;
 
     /**
      * 邀请码

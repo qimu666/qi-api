@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qimu.qiapibackend.common.ErrorCode;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.mapper.UserMapper;
+import com.qimu.qiapibackend.model.dto.user.UserBindEmailRequest;
 import com.qimu.qiapibackend.model.dto.user.UserEmailLoginRequest;
 import com.qimu.qiapibackend.model.dto.user.UserEmailRegisterRequest;
 import com.qimu.qiapibackend.model.dto.user.UserRegisterRequest;
@@ -194,6 +195,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             user.setUserAccount(emailAccount);
             user.setUserName(userName);
             user.setAccessKey(accessKey);
+            user.setEmail(emailAccount);
             user.setSecretKey(secretKey);
             if (invitationCodeUser != null) {
                 user.setBalance(100);
@@ -305,6 +307,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String accessKey = DigestUtils.md5DigestAsHex((Arrays.toString(RandomUtil.randomBytes(10)) + SALT + VOUCHER).getBytes());
         String secretKey = DigestUtils.md5DigestAsHex((SALT + VOUCHER + Arrays.toString(RandomUtil.randomBytes(10))).getBytes());
         newUser.setAccessKey(accessKey);
+        newUser.setEmail(emailAccount);
         newUser.setSecretKey(secretKey);
         boolean saveResult = this.save(newUser);
         if (!saveResult) {
@@ -315,6 +318,48 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 记录用户的登录态
         request.getSession().setAttribute(USER_LOGIN_STATE, userVO);
         return userVO;
+    }
+
+    @Override
+    public UserVO userBindEmail(UserBindEmailRequest userEmailLoginRequest, HttpServletRequest request) {
+        String emailAccount = userEmailLoginRequest.getEmailAccount();
+        String captcha = userEmailLoginRequest.getCaptcha();
+        if (StringUtils.isAnyBlank(emailAccount, captcha)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        String emailPattern = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
+        if (!Pattern.matches(emailPattern, emailAccount)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "不合法的邮箱地址！");
+        }
+        String cacheCaptcha = redisTemplate.opsForValue().get(CAPTCHA_CACHE_KEY + emailAccount);
+        if (StringUtils.isBlank(cacheCaptcha)) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "验证码已过期,请重新获取");
+        }
+        captcha = captcha.trim();
+        if (!cacheCaptcha.equals(captcha)) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "验证码输入有误");
+        }
+        // 查询用户是否绑定该邮箱
+        UserVO loginUser = this.getLoginUser(request);
+        if (loginUser.getEmail() != null && emailAccount.equals(loginUser.getEmail())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "该账号已绑定此邮箱,请更换新的邮箱！");
+        }
+        // 查询邮箱是否已经绑定
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("email", emailAccount);
+        User user = this.getOne(queryWrapper);
+        if (user != null) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "此邮箱已被绑定,请更换新的邮箱！");
+        }
+        user = new User();
+        user.setId(loginUser.getId());
+        user.setEmail(emailAccount);
+        boolean bindEmailResult = this.updateById(user);
+        if (!bindEmailResult) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "邮箱绑定失败,请稍后再试！");
+        }
+        loginUser.setEmail(emailAccount);
+        return loginUser;
     }
 
     /**

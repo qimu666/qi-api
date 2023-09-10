@@ -15,16 +15,18 @@ import com.alipay.api.response.AlipayTradePagePayResponse;
 import com.alipay.api.response.AlipayTradeQueryResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.github.binarywang.wxpay.bean.notify.WxPayOrderNotifyV3Result;
+import com.github.binarywang.wxpay.bean.result.WxPayOrderQueryV3Result;
 import com.ijpay.alipay.AliPayApi;
 import com.ijpay.alipay.AliPayApiConfigKit;
 import com.qimu.qiapibackend.common.ErrorCode;
 import com.qimu.qiapibackend.config.AliPayAccountConfig;
+import com.qimu.qiapibackend.config.EmailConfig;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.mapper.ProductOrderMapper;
 import com.qimu.qiapibackend.model.alipay.AliPayAsyncResponse;
 import com.qimu.qiapibackend.model.entity.ProductInfo;
 import com.qimu.qiapibackend.model.entity.ProductOrder;
+import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.enums.AlipayTradeStatusEnum;
 import com.qimu.qiapibackend.model.enums.PaymentStatusEnum;
 import com.qimu.qiapibackend.model.vo.PaymentInfoVo;
@@ -33,12 +35,14 @@ import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.PaymentInfoService;
 import com.qimu.qiapibackend.service.ProductOrderService;
 import com.qimu.qiapibackend.service.UserService;
+import com.qimu.qiapibackend.utils.EmailUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,6 +70,10 @@ import static com.qimu.qiapibackend.model.enums.PaymentStatusEnum.SUCCESS;
 @Slf4j
 @Qualifier("ALIPAY")
 public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductOrder> implements ProductOrderService {
+    @Resource
+    private EmailConfig emailConfig;
+    @Resource
+    private JavaMailSender mailSender;
     @Resource
     private AliPayAccountConfig aliPayAccountConfig;
     @Resource
@@ -227,10 +235,10 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
                 paymentInfoVo.setTradeState(alipayTradeQueryResponse.getTradeStatus());
                 paymentInfoVo.setTradeStateDesc("支付成功");
                 paymentInfoVo.setSuccessTime(String.valueOf(alipayTradeQueryResponse.getSendPayDate()));
-                WxPayOrderNotifyV3Result.Payer payer = new WxPayOrderNotifyV3Result.Payer();
+                WxPayOrderQueryV3Result.Payer payer = new WxPayOrderQueryV3Result.Payer();
                 payer.setOpenid(alipayTradeQueryResponse.getBuyerOpenId());
                 paymentInfoVo.setPayer(payer);
-                WxPayOrderNotifyV3Result.Amount amount = new WxPayOrderNotifyV3Result.Amount();
+                WxPayOrderQueryV3Result.Amount amount = new WxPayOrderQueryV3Result.Amount();
                 amount.setTotal(new BigDecimal(alipayTradeQueryResponse.getTotalAmount()).multiply(new BigDecimal("100")).intValue());
                 amount.setPayerTotal(new BigDecimal(alipayTradeQueryResponse.getReceiptAmount()).multiply(new BigDecimal("100")).intValue());
                 amount.setCurrency(alipayTradeQueryResponse.getPayCurrency());
@@ -239,6 +247,18 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
                 boolean paymentResult = paymentInfoService.createPaymentInfo(paymentInfoVo);
                 if (!updateOrderStatus & !addWalletBalance & !paymentResult) {
                     throw new BusinessException(ErrorCode.OPERATION_ERROR);
+                }
+                // 发送邮件
+                User user = userService.getById(productOrder.getUserId());
+                if (StringUtils.isNotBlank(user.getEmail())) {
+                    try {
+                        ProductOrder productOrderByOutTradeNo = this.getProductOrderByOutTradeNo(productOrder.getOrderNo());
+                        new EmailUtil().sendPaySuccessEmail(user.getEmail(), mailSender, emailConfig, productOrderByOutTradeNo.getOrderName(),
+                                String.valueOf(alipayTradeQueryResponse.getTotalAmount()));
+                        log.info("发送邮件：{}，成功", user.getEmail());
+                    } catch (Exception e) {
+                        log.error("发送邮件：{}，失败：{}", user.getEmail(), e.getMessage());
+                    }
                 }
                 log.info("超时订单{},更新成功", orderNo);
             }
@@ -319,6 +339,18 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
             log.error("交易失败");
             return result;
         }
+        // 发送邮件
+        User user = userService.getById(productOrder.getUserId());
+        if (StringUtils.isNotBlank(user.getEmail())) {
+            try {
+                ProductOrder productOrderByOutTradeNo = this.getProductOrderByOutTradeNo(productOrder.getOrderNo());
+                new EmailUtil().sendPaySuccessEmail(user.getEmail(), mailSender, emailConfig, productOrderByOutTradeNo.getOrderName(),
+                        String.valueOf(response.getTotalAmount()));
+                log.info("发送邮件：{}，成功", user.getEmail());
+            } catch (Exception e) {
+                log.error("发送邮件：{}，失败：{}", user.getEmail(), e.getMessage());
+            }
+        }
         return "success";
     }
 
@@ -343,10 +375,10 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
         paymentInfoVo.setTradeState(response.getTradeStatus());
         paymentInfoVo.setTradeStateDesc("支付成功");
         paymentInfoVo.setSuccessTime(response.getNotifyTime());
-        WxPayOrderNotifyV3Result.Payer payer = new WxPayOrderNotifyV3Result.Payer();
+        WxPayOrderQueryV3Result.Payer payer = new WxPayOrderQueryV3Result.Payer();
         payer.setOpenid(response.getBuyerId());
         paymentInfoVo.setPayer(payer);
-        WxPayOrderNotifyV3Result.Amount amount = new WxPayOrderNotifyV3Result.Amount();
+        WxPayOrderQueryV3Result.Amount amount = new WxPayOrderQueryV3Result.Amount();
         amount.setTotal(new BigDecimal(response.getTotalAmount()).multiply(new BigDecimal("100")).intValue());
         amount.setPayerTotal(new BigDecimal(response.getReceiptAmount()).multiply(new BigDecimal("100")).intValue());
         amount.setCurrency("CNY");
