@@ -19,8 +19,12 @@ public enum ProductTypeStatusEnum {
     /**
      * 余额充值
      */
-    RECHARGE("余额充值", "RECHARGE");
+    RECHARGE("余额充值", "RECHARGE"),
 
+    /**
+     * 充值活动
+     */
+    RECHARGE_ACTIVITY("充值活动", "RECHARGEACTIVITY");
     private final String text;
 
     private final String value;

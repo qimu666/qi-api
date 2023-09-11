@@ -342,11 +342,11 @@ public class InterfaceInfoController {
             QiApiRequest qiApiRequest = JSONUtil.toBean(requestParams, QiApiRequest.class);
             com.qimu.qiapisdk.common.BaseResponse<User> baseResponse = qiApiClient.getNameByJsonPost(qiApiRequest);
             if (baseResponse.getCode() != 0) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, "调用失败");
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, baseResponse.getMessage());
             }
             boolean invoke = userInterfaceInvokeService.invoke(interfaceInfo, loginUser);
             if (!invoke) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, "调用失败");
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, baseResponse.getMessage());
             }
             return ResultUtils.success(qiApiClient.getNameByJsonPost(qiApiRequest));
         } catch (Exception e) {

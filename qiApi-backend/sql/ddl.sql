@@ -73,7 +73,7 @@ create table if not exists qi_api_db.product_info
     userId         bigint                                 null comment '创建人',
     total          bigint                                 null comment '金额(分)',
     addPoints      bigint       default 0                 not null comment '增加积分个数',
-    productType    varchar(256) default 'RECHARGE'        not null comment '产品类型（VIP-会员 RECHARGE-充值）',
+    productType    varchar(256) default 'RECHARGE'        not null comment '产品类型（VIP-会员 RECHARGE-充值,RECHARGEACTIVITY-充值活动）',
     status         tinyint      default 0                 not null comment '商品状态（0- 默认下线 1- 上线）',
     expirationTime datetime                               null comment '过期时间',
     createTime     datetime     default CURRENT_TIMESTAMP not null comment '创建时间',
@@ -140,3 +140,15 @@ create table if not exists qi_api_db.user_interface_invoke
     isDelete     tinyint  default 0                 not null comment '是否删除'
 )
     comment '用户接口调用表';
+
+-- 充值活动表
+create table if not exists qi_api_db.recharge_activity
+(
+    id         bigint auto_increment comment 'id' primary key,
+    userId     bigint                             not null comment '用户id',
+    productId  bigint                             not null comment '商品id',
+    createTime datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete   tinyint  default 0                 not null comment '是否删除'
+)
+    comment '充值活动表';

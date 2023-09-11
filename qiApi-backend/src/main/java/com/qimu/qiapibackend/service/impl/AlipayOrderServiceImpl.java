@@ -26,14 +26,17 @@ import com.qimu.qiapibackend.mapper.ProductOrderMapper;
 import com.qimu.qiapibackend.model.alipay.AliPayAsyncResponse;
 import com.qimu.qiapibackend.model.entity.ProductInfo;
 import com.qimu.qiapibackend.model.entity.ProductOrder;
+import com.qimu.qiapibackend.model.entity.RechargeActivity;
 import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.enums.AlipayTradeStatusEnum;
 import com.qimu.qiapibackend.model.enums.PaymentStatusEnum;
+import com.qimu.qiapibackend.model.enums.ProductTypeStatusEnum;
 import com.qimu.qiapibackend.model.vo.PaymentInfoVo;
 import com.qimu.qiapibackend.model.vo.ProductOrderVo;
 import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.PaymentInfoService;
 import com.qimu.qiapibackend.service.ProductOrderService;
+import com.qimu.qiapibackend.service.RechargeActivityService;
 import com.qimu.qiapibackend.service.UserService;
 import com.qimu.qiapibackend.utils.EmailUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -85,9 +88,13 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
     private PaymentInfoService paymentInfoService;
     @Resource
     private RedissonClient redissonClient;
+    @Resource
+    private RechargeActivityService rechargeActivityService;
+
 
     @Override
     public ProductOrderVo getProductOrder(Long productId, UserVO loginUser, String payType) {
+        checkBuyRechargeActivity(loginUser.getId(), productId);
         LambdaQueryWrapper<ProductOrder> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ProductOrder::getProductId, productId);
         lambdaQueryWrapper.eq(ProductOrder::getStatus, PaymentStatusEnum.NOTPAY.getValue());
@@ -102,6 +109,26 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
             BeanUtils.copyProperties(oldOrder, productOrderVo);
             productOrderVo.setProductInfo(JSONUtil.toBean(oldOrder.getProductInfo(), ProductInfo.class));
             return productOrderVo;
+        }
+    }
+
+    /**
+     * 检查购买充值活动
+     *
+     * @param userId    用户id
+     * @param productId 产品订单id
+     * @return boolean
+     */
+    private void checkBuyRechargeActivity(Long userId, Long productId) {
+        ProductInfo productInfo = productInfoService.getById(productId);
+        if (productInfo.getProductType().equals(ProductTypeStatusEnum.RECHARGE_ACTIVITY.getValue())) {
+            LambdaQueryWrapper<RechargeActivity> activityLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            activityLambdaQueryWrapper.eq(RechargeActivity::getUserId, userId);
+            activityLambdaQueryWrapper.eq(RechargeActivity::getProductId, productId);
+            long count = rechargeActivityService.count(activityLambdaQueryWrapper);
+            if (count > 0) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "该活动只能参加一次哦！");
+            }
         }
     }
 
@@ -248,25 +275,31 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
                 if (!updateOrderStatus & !addWalletBalance & !paymentResult) {
                     throw new BusinessException(ErrorCode.OPERATION_ERROR);
                 }
-                // 发送邮件
-                User user = userService.getById(productOrder.getUserId());
-                if (StringUtils.isNotBlank(user.getEmail())) {
-                    try {
-                        ProductOrder productOrderByOutTradeNo = this.getProductOrderByOutTradeNo(productOrder.getOrderNo());
-                        new EmailUtil().sendPaySuccessEmail(user.getEmail(), mailSender, emailConfig, productOrderByOutTradeNo.getOrderName(),
-                                String.valueOf(alipayTradeQueryResponse.getTotalAmount()));
-                        log.info("发送邮件：{}，成功", user.getEmail());
-                    } catch (Exception e) {
-                        log.error("发送邮件：{}，失败：{}", user.getEmail(), e.getMessage());
-                    }
-                }
+                // 更新活动表
+                saveRechargeActivity(productOrder);
+                sendSuccessEmail(productOrder, alipayTradeQueryResponse.getTotalAmount());
                 log.info("超时订单{},更新成功", orderNo);
             }
         } catch (AlipayApiException e) {
             log.error("订单{} 处理失败", orderNo);
-            throw new RuntimeException(e);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, e.getMessage());
         }
 
+    }
+
+    private void sendSuccessEmail(ProductOrder productOrder, String orderTotal) {
+        // 发送邮件
+        User user = userService.getById(productOrder.getUserId());
+        if (StringUtils.isNotBlank(user.getEmail())) {
+            try {
+                ProductOrder productOrderByOutTradeNo = this.getProductOrderByOutTradeNo(productOrder.getOrderNo());
+                new EmailUtil().sendPaySuccessEmail(user.getEmail(), mailSender, emailConfig, productOrderByOutTradeNo.getOrderName(),
+                        String.valueOf(orderTotal));
+                log.info("发送邮件：{}，成功", user.getEmail());
+            } catch (Exception e) {
+                log.error("发送邮件：{}，失败：{}", user.getEmail(), e.getMessage());
+            }
+        }
     }
 
     @Override
@@ -290,7 +323,7 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
             }
         } catch (Exception e) {
             log.error("【支付宝异步回调异常】:" + e.getMessage());
-            return "failure";
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, e.getMessage());
         } finally {
             if (rLock.isHeldByCurrentThread()) {
                 System.out.println("unLock: " + Thread.currentThread().getId());
@@ -339,18 +372,6 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
             log.error("交易失败");
             return result;
         }
-        // 发送邮件
-        User user = userService.getById(productOrder.getUserId());
-        if (StringUtils.isNotBlank(user.getEmail())) {
-            try {
-                ProductOrder productOrderByOutTradeNo = this.getProductOrderByOutTradeNo(productOrder.getOrderNo());
-                new EmailUtil().sendPaySuccessEmail(user.getEmail(), mailSender, emailConfig, productOrderByOutTradeNo.getOrderName(),
-                        String.valueOf(response.getTotalAmount()));
-                log.info("发送邮件：{}，成功", user.getEmail());
-            } catch (Exception e) {
-                log.error("发送邮件：{}，失败：{}", user.getEmail(), e.getMessage());
-            }
-        }
         return "success";
     }
 
@@ -385,11 +406,33 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
         amount.setPayerCurrency("CNY");
         paymentInfoVo.setAmount(amount);
         boolean paymentResult = paymentInfoService.createPaymentInfo(paymentInfoVo);
-        if (paymentResult && updateOrderStatus && addWalletBalance) {
+        // 更新活动表
+        boolean rechargeActivity = saveRechargeActivity(productOrder);
+        if (paymentResult && updateOrderStatus && addWalletBalance && rechargeActivity) {
             log.info("【支付回调通知处理成功】");
+            // 发送邮件
+            sendSuccessEmail(productOrder, response.getTotalAmount());
             return "success";
         }
         throw new BusinessException(ErrorCode.OPERATION_ERROR);
+    }
+
+
+    /**
+     * 保存充值活动
+     *
+     * @param productOrder 产品订单
+     * @return boolean
+     */
+    private boolean saveRechargeActivity(ProductOrder productOrder) {
+        RechargeActivity rechargeActivity = new RechargeActivity();
+        rechargeActivity.setUserId(productOrder.getUserId());
+        rechargeActivity.setProductId(productOrder.getProductId());
+        boolean save = rechargeActivityService.save(rechargeActivity);
+        if (!save) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "保存失败");
+        }
+        return true;
     }
 }
 

@@ -21,12 +21,15 @@ import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.mapper.ProductOrderMapper;
 import com.qimu.qiapibackend.model.entity.ProductInfo;
 import com.qimu.qiapibackend.model.entity.ProductOrder;
+import com.qimu.qiapibackend.model.entity.RechargeActivity;
 import com.qimu.qiapibackend.model.entity.User;
+import com.qimu.qiapibackend.model.enums.ProductTypeStatusEnum;
 import com.qimu.qiapibackend.model.vo.PaymentInfoVo;
 import com.qimu.qiapibackend.model.vo.ProductOrderVo;
 import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.PaymentInfoService;
 import com.qimu.qiapibackend.service.ProductOrderService;
+import com.qimu.qiapibackend.service.RechargeActivityService;
 import com.qimu.qiapibackend.service.UserService;
 import com.qimu.qiapibackend.utils.EmailUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -86,6 +89,8 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
 
     @Resource
     private PaymentInfoService paymentInfoService;
+    @Resource
+    private RechargeActivityService rechargeActivityService;
 
     /**
      * 获取产品订单
@@ -97,6 +102,7 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
      */
     @Override
     public ProductOrderVo getProductOrder(Long productId, UserVO loginUser, String payType) {
+        checkBuyRechargeActivity(loginUser.getId(), productId);
         LambdaQueryWrapper<ProductOrder> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ProductOrder::getProductId, productId);
         lambdaQueryWrapper.eq(ProductOrder::getStatus, NOTPAY.getValue());
@@ -123,7 +129,6 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
      */
     @Override
     public ProductOrderVo saveProductOrder(Long productId, UserVO loginUser) {
-
         ProductInfo productInfo = productInfoService.getById(productId);
         if (productInfo == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "商品不存在");
@@ -176,6 +181,26 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
             BeanUtils.copyProperties(productOrder, productOrderVo);
             productOrderVo.setProductInfo(productInfo);
             return productOrderVo;
+        }
+    }
+
+    /**
+     * 检查购买充值活动
+     *
+     * @param userId    用户id
+     * @param productId 产品订单id
+     * @return boolean
+     */
+    private void checkBuyRechargeActivity(Long userId, Long productId) {
+        ProductInfo productInfo = productInfoService.getById(productId);
+        if (productInfo.getProductType().equals(ProductTypeStatusEnum.RECHARGE_ACTIVITY.getValue())) {
+            LambdaQueryWrapper<RechargeActivity> activityLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            activityLambdaQueryWrapper.eq(RechargeActivity::getUserId, userId);
+            activityLambdaQueryWrapper.eq(RechargeActivity::getProductId, productId);
+            long count = rechargeActivityService.count(activityLambdaQueryWrapper);
+            if (count > 0) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "该活动只能参加一次哦！");
+            }
         }
     }
 
@@ -252,18 +277,9 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
                 PaymentInfoVo paymentInfoVo = new PaymentInfoVo();
                 BeanUtils.copyProperties(wxPayOrderQueryV3Result, paymentInfoVo);
                 paymentInfoService.createPaymentInfo(paymentInfoVo);
-                // 发送邮件
-                User user = userService.getById(productOrder.getUserId());
-                if (StringUtils.isNotBlank(user.getEmail())) {
-                    try {
-                        ProductOrder productOrderByOutTradeNo = this.getProductOrderByOutTradeNo(productOrder.getOrderNo());
-                        new EmailUtil().sendPaySuccessEmail(user.getEmail(), mailSender, emailConfig, productOrderByOutTradeNo.getOrderName(),
-                                String.valueOf(new BigDecimal(productOrderByOutTradeNo.getTotal()).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP)));
-                        log.info("发送邮件：{}，成功", user.getEmail());
-                    } catch (Exception e) {
-                        log.error("发送邮件：{}，失败：{}", user.getEmail(), e.getMessage());
-                    }
-                }
+                // 更新活动表
+                saveRechargeActivity(productOrder);
+                sendPaySuccessEmail(productOrder);
                 log.info("超时订单{},状态已更新", orderNo);
             }
             if (tradeState.equals(NOTPAY.getValue())) {
@@ -304,26 +320,28 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
                     }
                     // 更新订单状态
                     boolean updateOrderStatus = this.updateOrderStatusByOrderNo(outTradeNo, SUCCESS.getValue());
-                    redisTemplate.delete(QUERY_ORDER_STATUS + outTradeNo);
                     // 更新用户积分
                     boolean addWalletBalance = userService.addWalletBalance(productOrder.getUserId(), productOrder.getAddPoints());
-                    // 发送邮件
-                    User user = userService.getById(productOrder.getUserId());
-                    if (StringUtils.isNotBlank(user.getEmail())) {
-                        try {
-                            new EmailUtil().sendPaySuccessEmail(user.getEmail(), mailSender, emailConfig, productOrder.getOrderName(),
-                                    String.valueOf(new BigDecimal(productOrder.getTotal()).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP)));
-                            log.info("发送邮件：{}，成功", user.getEmail());
-                        } catch (Exception e) {
-                            log.error("发送邮件：{}，失败：{}", user.getEmail(), e.getMessage());
-                        }
-                    }
                     // 保存支付记录
                     PaymentInfoVo paymentInfoVo = new PaymentInfoVo();
                     BeanUtils.copyProperties(notifyResult, paymentInfoVo);
+                    WxPayOrderQueryV3Result.Payer payer = new WxPayOrderQueryV3Result.Payer();
+                    payer.setOpenid(notifyResult.getPayer().getOpenid());
+                    WxPayOrderQueryV3Result.Amount amount = new WxPayOrderQueryV3Result.Amount();
+                    amount.setTotal(notifyResult.getAmount().getTotal());
+                    amount.setPayerTotal(notifyResult.getAmount().getPayerTotal());
+                    amount.setCurrency(notifyResult.getAmount().getCurrency());
+                    amount.setPayerCurrency(notifyResult.getAmount().getPayerCurrency());
+                    paymentInfoVo.setPayer(payer);
+                    paymentInfoVo.setAmount(amount);
                     boolean paymentResult = paymentInfoService.createPaymentInfo(paymentInfoVo);
-                    if (paymentResult && updateOrderStatus && addWalletBalance) {
+                    // 更新活动表
+                    boolean rechargeActivity = saveRechargeActivity(productOrder);
+                    if (paymentResult && updateOrderStatus && addWalletBalance && rechargeActivity) {
                         log.info("【支付回调通知处理成功】");
+                        // 发送邮件
+                        redisTemplate.delete(QUERY_ORDER_STATUS + outTradeNo);
+                        sendPaySuccessEmail(productOrder);
                         return WxPayNotifyResponse.success("支付成功");
                     }
                 }
@@ -335,16 +353,57 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
             if (WxPayConstants.WxpayTradeStatus.USER_PAYING.equals(notifyResult.getTradeState())) {
                 throw new WxPayException("支付中");
             }
-            return WxPayNotifyResponse.fail("支付失败");
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "支付失败");
         } catch (Exception e) {
             log.error("【支付失败】" + e.getMessage());
-            return WxPayNotifyResponse.fail("支付失败");
+            try {
+                throw new WxPayException("支付失败");
+            } catch (WxPayException ex) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "支付失败");
+            }
         } finally {
             if (rLock.isHeldByCurrentThread()) {
                 System.out.println("unLock: " + Thread.currentThread().getId());
                 rLock.unlock();
             }
         }
+    }
+
+
+    /**
+     * 发送支付成功电子邮件
+     *
+     * @param productOrder 产品订单
+     */
+    private void sendPaySuccessEmail(ProductOrder productOrder) {
+        // 发送邮件
+        User user = userService.getById(productOrder.getUserId());
+        if (StringUtils.isNotBlank(user.getEmail())) {
+            try {
+                new EmailUtil().sendPaySuccessEmail(user.getEmail(), mailSender, emailConfig, productOrder.getOrderName(),
+                        String.valueOf(new BigDecimal(productOrder.getTotal()).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP)));
+                log.info("发送邮件：{}，成功", user.getEmail());
+            } catch (Exception e) {
+                log.error("发送邮件：{}，失败：{}", user.getEmail(), e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * 保存充值活动
+     *
+     * @param productOrder 产品订单
+     * @return boolean
+     */
+    private boolean saveRechargeActivity(ProductOrder productOrder) {
+        RechargeActivity rechargeActivity = new RechargeActivity();
+        rechargeActivity.setUserId(productOrder.getUserId());
+        rechargeActivity.setProductId(productOrder.getProductId());
+        boolean save = rechargeActivityService.save(rechargeActivity);
+        if (!save) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "保存失败");
+        }
+        return true;
     }
 }
 
