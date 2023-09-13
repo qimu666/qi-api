@@ -3,6 +3,7 @@ package com.qimu.qiapibackend.job;
 import com.qimu.qiapibackend.model.entity.ProductOrder;
 import com.qimu.qiapibackend.service.OrderService;
 import com.qimu.qiapibackend.service.ProductOrderService;
+import com.qimu.qiapibackend.utils.RedissonLockUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,8 @@ public class PayJob {
     private ProductOrderService productOrderService;
     @Resource
     private OrderService orderService;
+    @Resource
+    private RedissonLockUtil redissonLockUtil;
 
     /**
      * 微信订单确认
@@ -33,17 +36,19 @@ public class PayJob {
      */
     @Scheduled(cron = "0/25 * * * * ?")
     public void wxOrderConfirm() {
-        List<ProductOrder> orderList = orderService.getNoPayOrderByDuration(5, false, WX.getValue());
-        ProductOrderService productOrderService = orderService.getProductOrderServiceByPayType(WX.getValue());
-        for (ProductOrder productOrder : orderList) {
-            String orderNo = productOrder.getOrderNo();
-            try {
-                productOrderService.processingTimedOutOrders(productOrder);
-            } catch (Exception e) {
-                log.error("微信超时订单,{},确认异常：{}", orderNo, e.getMessage());
-                break;
+        redissonLockUtil.redissonDistributedLocks("wxOrderConfirm", () -> {
+            List<ProductOrder> orderList = orderService.getNoPayOrderByDuration(5, false, WX.getValue());
+            ProductOrderService productOrderService = orderService.getProductOrderServiceByPayType(WX.getValue());
+            for (ProductOrder productOrder : orderList) {
+                String orderNo = productOrder.getOrderNo();
+                try {
+                    productOrderService.processingTimedOutOrders(productOrder);
+                } catch (Exception e) {
+                    log.error("微信超时订单,{},确认异常：{}", orderNo, e.getMessage());
+                    break;
+                }
             }
-        }
+        });
     }
 
     /**
@@ -52,17 +57,19 @@ public class PayJob {
      */
     @Scheduled(cron = "0/20 * * * * ?")
     public void aliPayOrderConfirm() {
-        List<ProductOrder> orderList = orderService.getNoPayOrderByDuration(5, false, ALIPAY.getValue());
-        ProductOrderService productOrderService = orderService.getProductOrderServiceByPayType(ALIPAY.getValue());
-        for (ProductOrder productOrder : orderList) {
-            String orderNo = productOrder.getOrderNo();
-            try {
-                productOrderService.processingTimedOutOrders(productOrder);
-            } catch (Exception e) {
-                log.error("支付宝超时订单,{},确认异常：{}", orderNo, e.getMessage());
-                break;
+        redissonLockUtil.redissonDistributedLocks("aliPayOrderConfirm", () -> {
+            List<ProductOrder> orderList = orderService.getNoPayOrderByDuration(5, false, ALIPAY.getValue());
+            ProductOrderService productOrderService = orderService.getProductOrderServiceByPayType(ALIPAY.getValue());
+            for (ProductOrder productOrder : orderList) {
+                String orderNo = productOrder.getOrderNo();
+                try {
+                    productOrderService.processingTimedOutOrders(productOrder);
+                } catch (Exception e) {
+                    log.error("支付宝超时订单,{},确认异常：{}", orderNo, e.getMessage());
+                    break;
+                }
             }
-        }
+        });
     }
 
     /**
@@ -71,10 +78,12 @@ public class PayJob {
      */
     @Scheduled(cron = "* * 2 * * ?")
     public void clearOverdueOrders() {
-        List<ProductOrder> orderList = orderService.getNoPayOrderByDuration(15 * 24 * 60, true, "");
-        boolean removeResult = productOrderService.removeBatchByIds(orderList);
-        if (removeResult) {
-            log.info("清除成功");
-        }
+        redissonLockUtil.redissonDistributedLocks("clearOverdueOrders", () -> {
+            List<ProductOrder> orderList = orderService.getNoPayOrderByDuration(15 * 24 * 60, true, "");
+            boolean removeResult = productOrderService.removeBatchByIds(orderList);
+            if (removeResult) {
+                log.info("清除成功");
+            }
+        });
     }
 }

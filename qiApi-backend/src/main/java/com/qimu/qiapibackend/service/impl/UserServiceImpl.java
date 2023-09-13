@@ -17,6 +17,7 @@ import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.enums.UserAccountStatusEnum;
 import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.UserService;
+import com.qimu.qiapibackend.utils.RedissonLockUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -50,6 +51,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Resource
     private RedisTemplate<String, String> redisTemplate;
+
+    @Resource
+    private RedissonLockUtil redissonLockUtil;
 
     /**
      * 用户寄存器
@@ -89,7 +93,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!userPassword.equals(checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的密码不一致");
         }
-        synchronized (userAccount.intern()) {
+        String redissonLock = ("userRegister_" + userAccount).intern();
+        return redissonLockUtil.redissonDistributedLocks(redissonLock, () -> {
             // 账户不能重复
             QueryWrapper<User> queryWrapper = new QueryWrapper<>();
             queryWrapper.eq("userAccount", userAccount);
@@ -107,7 +112,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     throw new BusinessException(ErrorCode.OPERATION_ERROR, "该邀请码无效");
                 }
             }
-
             // 2. 加密
             String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
             // ak/sk
@@ -131,7 +135,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
             }
             return user.getId();
-        }
+        }, "注册账号失败");
     }
 
 
@@ -167,8 +171,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!cacheCaptcha.equals(captcha)) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "验证码输入有误");
         }
-
-        synchronized (emailAccount.intern()) {
+        String redissonLock = ("userEmailRegister_" + emailAccount).intern();
+        return redissonLockUtil.redissonDistributedLocks(redissonLock, () -> {
             // 账户不能重复
             QueryWrapper<User> queryWrapper = new QueryWrapper<>();
             queryWrapper.eq("userAccount", emailAccount);
@@ -207,7 +211,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
             }
             return user.getId();
-        }
+        }, "邮箱账号注册失败");
     }
 
 

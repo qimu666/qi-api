@@ -3,12 +3,17 @@ package com.qimu.qiapibackend.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.qimu.qiapibackend.common.ErrorCode;
 import com.qimu.qiapibackend.exception.BusinessException;
+import com.qimu.qiapibackend.model.entity.ProductInfo;
 import com.qimu.qiapibackend.model.entity.ProductOrder;
+import com.qimu.qiapibackend.model.entity.RechargeActivity;
 import com.qimu.qiapibackend.model.enums.PaymentStatusEnum;
+import com.qimu.qiapibackend.model.enums.ProductTypeStatusEnum;
 import com.qimu.qiapibackend.model.vo.ProductOrderVo;
 import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.OrderService;
 import com.qimu.qiapibackend.service.ProductOrderService;
+import com.qimu.qiapibackend.service.RechargeActivityService;
+import com.qimu.qiapibackend.utils.RedissonLockUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -40,6 +45,16 @@ public class OrderServiceImpl implements OrderService {
     @Resource
     private List<ProductOrderService> productOrderServices;
 
+    @Resource
+    private RechargeActivityService rechargeActivityService;
+
+    @Resource
+    private ProductInfoServiceImpl productInfoService;
+
+
+    @Resource
+    private RedissonLockUtil redissonLockUtil;
+
     /**
      * 按付费类型获取产品订单服务
      *
@@ -62,15 +77,42 @@ public class OrderServiceImpl implements OrderService {
     public ProductOrderVo createOrderByPayType(Long productId, String payType, UserVO loginUser) {
         // 按付费类型获取产品订单服务Bean
         ProductOrderService productOrderService = getProductOrderServiceByPayType(payType);
-        // 创建支付订单
-        ProductOrderVo productOrderVo = productOrderService.getProductOrder(productId, loginUser, payType);
-        // 订单存在就返回不再新创建
-        if (productOrderVo != null) {
-            return productOrderVo;
-        }
-        // 保存订单,返回vo信息
-        return productOrderService.saveProductOrder(productId, loginUser);
+        String redissonLock = ("getOrder_" + loginUser.getUserAccount()).intern();
 
+        ProductOrderVo getProductOrderVo = redissonLockUtil.redissonDistributedLocks(redissonLock, () -> {
+            // 订单存在就返回不再新创建
+            return productOrderService.getProductOrder(productId, loginUser, payType);
+        });
+        if (getProductOrderVo != null) {
+            return getProductOrderVo;
+        }
+        redissonLock = ("createOrder_" + loginUser.getUserAccount()).intern();
+        // 分布式锁工具
+        return redissonLockUtil.redissonDistributedLocks(redissonLock, () -> {
+            // 检查是否购买充值活动
+            checkBuyRechargeActivity(loginUser.getId(), productId);
+            // 保存订单,返回vo信息
+            return productOrderService.saveProductOrder(productId, loginUser);
+        });
+    }
+
+    /**
+     * 检查购买充值活动
+     *
+     * @param userId    用户id
+     * @param productId 产品订单id
+     */
+    private void checkBuyRechargeActivity(Long userId, Long productId) {
+        ProductInfo productInfo = productInfoService.getById(productId);
+        if (productInfo.getProductType().equals(ProductTypeStatusEnum.RECHARGE_ACTIVITY.getValue())) {
+            LambdaQueryWrapper<RechargeActivity> activityLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            activityLambdaQueryWrapper.eq(RechargeActivity::getUserId, userId);
+            activityLambdaQueryWrapper.eq(RechargeActivity::getProductId, productId);
+            long count = rechargeActivityService.count(activityLambdaQueryWrapper);
+            if (count > 0) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "该活动只能参加一次哦！");
+            }
+        }
     }
 
     /**

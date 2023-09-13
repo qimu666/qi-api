@@ -23,7 +23,6 @@ import com.qimu.qiapibackend.model.entity.ProductInfo;
 import com.qimu.qiapibackend.model.entity.ProductOrder;
 import com.qimu.qiapibackend.model.entity.RechargeActivity;
 import com.qimu.qiapibackend.model.entity.User;
-import com.qimu.qiapibackend.model.enums.ProductTypeStatusEnum;
 import com.qimu.qiapibackend.model.vo.PaymentInfoVo;
 import com.qimu.qiapibackend.model.vo.ProductOrderVo;
 import com.qimu.qiapibackend.model.vo.UserVO;
@@ -86,7 +85,6 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
     private JavaMailSender mailSender;
     @Resource
     private UserService userService;
-
     @Resource
     private PaymentInfoService paymentInfoService;
     @Resource
@@ -102,7 +100,6 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
      */
     @Override
     public ProductOrderVo getProductOrder(Long productId, UserVO loginUser, String payType) {
-        checkBuyRechargeActivity(loginUser.getId(), productId);
         LambdaQueryWrapper<ProductOrder> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ProductOrder::getProductId, productId);
         lambdaQueryWrapper.eq(ProductOrder::getStatus, NOTPAY.getValue());
@@ -148,60 +145,36 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
         productOrder.setExpirationTime(expirationTime);
         productOrder.setProductInfo(JSONUtil.toJsonPrettyStr(productInfo));
         productOrder.setAddPoints(productInfo.getAddPoints());
-
-        synchronized (loginUser.getUserAccount().intern()) {
-            boolean saveResult = this.save(productOrder);
-
-            // 构建支付请求
-            WxPayUnifiedOrderV3Request wxPayRequest = new WxPayUnifiedOrderV3Request();
-            WxPayUnifiedOrderV3Request.Amount amount = new WxPayUnifiedOrderV3Request.Amount();
-            amount.setTotal(productOrder.getTotal());
-            wxPayRequest.setAmount(amount);
-            wxPayRequest.setDescription(productOrder.getOrderName());
-            // 设置订单的过期时间为5分钟
-            String format = DateUtil.format(expirationTime, "yyyy-MM-dd'T'HH:mm:ssXXX");
-            wxPayRequest.setTimeExpire(format);
-            wxPayRequest.setOutTradeNo(productOrder.getOrderNo());
-            try {
-                String codeUrl = wxPayService.createOrderV3(TradeTypeEnum.NATIVE, wxPayRequest);
-                if (StringUtils.isBlank(codeUrl)) {
-                    throw new BusinessException(ErrorCode.OPERATION_ERROR);
-                }
-                productOrder.setCodeUrl(codeUrl);
-                // 更新微信订单的二维码,不用重复创建
-                boolean updateResult = this.updateProductOrder(productOrder);
-                if (!updateResult & !saveResult) {
-                    throw new BusinessException(ErrorCode.OPERATION_ERROR);
-                }
-            } catch (WxPayException e) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, e.getMessage());
+        boolean saveResult = this.save(productOrder);
+        // 构建支付请求
+        WxPayUnifiedOrderV3Request wxPayRequest = new WxPayUnifiedOrderV3Request();
+        WxPayUnifiedOrderV3Request.Amount amount = new WxPayUnifiedOrderV3Request.Amount();
+        amount.setTotal(productOrder.getTotal());
+        wxPayRequest.setAmount(amount);
+        wxPayRequest.setDescription(productOrder.getOrderName());
+        // 设置订单的过期时间为5分钟
+        String format = DateUtil.format(expirationTime, "yyyy-MM-dd'T'HH:mm:ssXXX");
+        wxPayRequest.setTimeExpire(format);
+        wxPayRequest.setOutTradeNo(productOrder.getOrderNo());
+        try {
+            String codeUrl = wxPayService.createOrderV3(TradeTypeEnum.NATIVE, wxPayRequest);
+            if (StringUtils.isBlank(codeUrl)) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR);
             }
-            // 构建vo
-            ProductOrderVo productOrderVo = new ProductOrderVo();
-            BeanUtils.copyProperties(productOrder, productOrderVo);
-            productOrderVo.setProductInfo(productInfo);
-            return productOrderVo;
-        }
-    }
-
-    /**
-     * 检查购买充值活动
-     *
-     * @param userId    用户id
-     * @param productId 产品订单id
-     * @return boolean
-     */
-    private void checkBuyRechargeActivity(Long userId, Long productId) {
-        ProductInfo productInfo = productInfoService.getById(productId);
-        if (productInfo.getProductType().equals(ProductTypeStatusEnum.RECHARGE_ACTIVITY.getValue())) {
-            LambdaQueryWrapper<RechargeActivity> activityLambdaQueryWrapper = new LambdaQueryWrapper<>();
-            activityLambdaQueryWrapper.eq(RechargeActivity::getUserId, userId);
-            activityLambdaQueryWrapper.eq(RechargeActivity::getProductId, productId);
-            long count = rechargeActivityService.count(activityLambdaQueryWrapper);
-            if (count > 0) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, "该活动只能参加一次哦！");
+            productOrder.setCodeUrl(codeUrl);
+            // 更新微信订单的二维码,不用重复创建
+            boolean updateResult = this.updateProductOrder(productOrder);
+            if (!updateResult & !saveResult) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR);
             }
+        } catch (WxPayException e) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, e.getMessage());
         }
+        // 构建vo
+        ProductOrderVo productOrderVo = new ProductOrderVo();
+        BeanUtils.copyProperties(productOrder, productOrderVo);
+        productOrderVo.setProductInfo(productInfo);
+        return productOrderVo;
     }
 
     /**

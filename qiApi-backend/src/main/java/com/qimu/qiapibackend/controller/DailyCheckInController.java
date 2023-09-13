@@ -9,6 +9,7 @@ import com.qimu.qiapibackend.model.entity.DailyCheckIn;
 import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.DailyCheckInService;
 import com.qimu.qiapibackend.service.UserService;
+import com.qimu.qiapibackend.utils.RedissonLockUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +36,8 @@ public class DailyCheckInController {
 
     @Resource
     private UserService userService;
-
+    @Resource
+    private RedissonLockUtil redissonLockUtil;
 
     // region 增删改查
 
@@ -49,7 +51,8 @@ public class DailyCheckInController {
     @Transactional(rollbackFor = Exception.class)
     public BaseResponse<Boolean> doDailyCheckIn(HttpServletRequest request) {
         UserVO loginUser = userService.getLoginUser(request);
-        synchronized (loginUser.getUserAccount().intern()) {
+        String redissonLock = ("doDailyCheckIn_" + loginUser.getUserAccount()).intern();
+        return redissonLockUtil.redissonDistributedLocks(redissonLock, () -> {
             LambdaQueryWrapper<DailyCheckIn> dailyCheckInLambdaQueryWrapper = new LambdaQueryWrapper<>();
             dailyCheckInLambdaQueryWrapper.eq(DailyCheckIn::getUserId, loginUser.getId());
             DailyCheckIn dailyCheckIn = dailyCheckInService.getOne(dailyCheckInLambdaQueryWrapper);
@@ -66,7 +69,7 @@ public class DailyCheckInController {
                 throw new BusinessException(ErrorCode.OPERATION_ERROR);
             }
             return ResultUtils.success(true);
-        }
+        }, "签到失败");
     }
     // endregion
 }

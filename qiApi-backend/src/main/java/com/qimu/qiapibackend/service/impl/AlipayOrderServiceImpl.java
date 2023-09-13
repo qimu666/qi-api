@@ -30,7 +30,6 @@ import com.qimu.qiapibackend.model.entity.RechargeActivity;
 import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.enums.AlipayTradeStatusEnum;
 import com.qimu.qiapibackend.model.enums.PaymentStatusEnum;
-import com.qimu.qiapibackend.model.enums.ProductTypeStatusEnum;
 import com.qimu.qiapibackend.model.vo.PaymentInfoVo;
 import com.qimu.qiapibackend.model.vo.ProductOrderVo;
 import com.qimu.qiapibackend.model.vo.UserVO;
@@ -91,45 +90,21 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
     @Resource
     private RechargeActivityService rechargeActivityService;
 
-
     @Override
     public ProductOrderVo getProductOrder(Long productId, UserVO loginUser, String payType) {
-        checkBuyRechargeActivity(loginUser.getId(), productId);
         LambdaQueryWrapper<ProductOrder> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ProductOrder::getProductId, productId);
         lambdaQueryWrapper.eq(ProductOrder::getStatus, PaymentStatusEnum.NOTPAY.getValue());
         lambdaQueryWrapper.eq(ProductOrder::getPayType, payType);
         lambdaQueryWrapper.eq(ProductOrder::getUserId, loginUser.getId());
-        synchronized (String.valueOf(loginUser.getId()).intern()) {
-            ProductOrder oldOrder = this.getOne(lambdaQueryWrapper);
-            if (oldOrder == null) {
-                return null;
-            }
-            ProductOrderVo productOrderVo = new ProductOrderVo();
-            BeanUtils.copyProperties(oldOrder, productOrderVo);
-            productOrderVo.setProductInfo(JSONUtil.toBean(oldOrder.getProductInfo(), ProductInfo.class));
-            return productOrderVo;
+        ProductOrder oldOrder = this.getOne(lambdaQueryWrapper);
+        if (oldOrder == null) {
+            return null;
         }
-    }
-
-    /**
-     * 检查购买充值活动
-     *
-     * @param userId    用户id
-     * @param productId 产品订单id
-     * @return boolean
-     */
-    private void checkBuyRechargeActivity(Long userId, Long productId) {
-        ProductInfo productInfo = productInfoService.getById(productId);
-        if (productInfo.getProductType().equals(ProductTypeStatusEnum.RECHARGE_ACTIVITY.getValue())) {
-            LambdaQueryWrapper<RechargeActivity> activityLambdaQueryWrapper = new LambdaQueryWrapper<>();
-            activityLambdaQueryWrapper.eq(RechargeActivity::getUserId, userId);
-            activityLambdaQueryWrapper.eq(RechargeActivity::getProductId, productId);
-            long count = rechargeActivityService.count(activityLambdaQueryWrapper);
-            if (count > 0) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, "该活动只能参加一次哦！");
-            }
-        }
+        ProductOrderVo productOrderVo = new ProductOrderVo();
+        BeanUtils.copyProperties(oldOrder, productOrderVo);
+        productOrderVo.setProductInfo(JSONUtil.toBean(oldOrder.getProductInfo(), ProductInfo.class));
+        return productOrderVo;
     }
 
     @Override
@@ -155,41 +130,39 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
         productOrder.setProductInfo(JSONUtil.toJsonPrettyStr(productInfo));
         productOrder.setAddPoints(productInfo.getAddPoints());
 
-        synchronized (loginUser.getUserAccount().intern()) {
-            boolean saveResult = this.save(productOrder);
+        boolean saveResult = this.save(productOrder);
 
-            AlipayTradePagePayModel model = new AlipayTradePagePayModel();
-            model.setOutTradeNo(orderNo);
-            model.setSubject(productInfo.getName());
-            model.setProductCode("FAST_INSTANT_TRADE_PAY");
-            // 金额四舍五入
-            BigDecimal scaledAmount = new BigDecimal(productInfo.getTotal()).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-            model.setTotalAmount(String.valueOf(scaledAmount));
-            model.setBody(productInfo.getDescription());
+        AlipayTradePagePayModel model = new AlipayTradePagePayModel();
+        model.setOutTradeNo(orderNo);
+        model.setSubject(productInfo.getName());
+        model.setProductCode("FAST_INSTANT_TRADE_PAY");
+        // 金额四舍五入
+        BigDecimal scaledAmount = new BigDecimal(productInfo.getTotal()).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+        model.setTotalAmount(String.valueOf(scaledAmount));
+        model.setBody(productInfo.getDescription());
 
-            AlipayTradePagePayRequest request = new AlipayTradePagePayRequest();
-            request.setBizModel(model);
-            request.setNotifyUrl(aliPayAccountConfig.getNotifyUrl());
-            request.setReturnUrl(aliPayAccountConfig.getReturnUrl());
+        AlipayTradePagePayRequest request = new AlipayTradePagePayRequest();
+        request.setBizModel(model);
+        request.setNotifyUrl(aliPayAccountConfig.getNotifyUrl());
+        request.setReturnUrl(aliPayAccountConfig.getReturnUrl());
 
-            try {
-                AlipayTradePagePayResponse alipayTradePagePayResponse = AliPayApi.pageExecute(request);
-                String payUrl = alipayTradePagePayResponse.getBody();
-                productOrder.setFormData(payUrl);
-            } catch (AlipayApiException e) {
-                throw new RuntimeException(e);
-            }
-
-            boolean updateResult = this.updateProductOrder(productOrder);
-            if (!updateResult & !saveResult) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR);
-            }
-            // 构建vo
-            ProductOrderVo productOrderVo = new ProductOrderVo();
-            BeanUtils.copyProperties(productOrder, productOrderVo);
-            productOrderVo.setProductInfo(productInfo);
-            return productOrderVo;
+        try {
+            AlipayTradePagePayResponse alipayTradePagePayResponse = AliPayApi.pageExecute(request);
+            String payUrl = alipayTradePagePayResponse.getBody();
+            productOrder.setFormData(payUrl);
+        } catch (AlipayApiException e) {
+            throw new RuntimeException(e);
         }
+
+        boolean updateResult = this.updateProductOrder(productOrder);
+        if (!updateResult & !saveResult) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR);
+        }
+        // 构建vo
+        ProductOrderVo productOrderVo = new ProductOrderVo();
+        BeanUtils.copyProperties(productOrder, productOrderVo);
+        productOrderVo.setProductInfo(productInfo);
+        return productOrderVo;
     }
 
     @Override

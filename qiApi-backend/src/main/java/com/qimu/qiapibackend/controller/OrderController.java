@@ -12,7 +12,6 @@ import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.OrderService;
 import com.qimu.qiapibackend.service.ProductOrderService;
 import com.qimu.qiapibackend.service.UserService;
-import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -68,6 +67,9 @@ public class OrderController {
         }
         UserVO loginUser = userService.getLoginUser(request);
         ProductOrderVo productOrderVo = orderService.createOrderByPayType(productId, payType, loginUser);
+        if (productOrderVo == null) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "订单创建失败，请稍后再试");
+        }
         return ResultUtils.success(productOrderVo);
     }
 
@@ -105,7 +107,6 @@ public class OrderController {
      * @return {@link String}
      */
 
-    @ApiOperation("支付回调通知处理")
     @PostMapping("/notify/order")
     public String parseOrderNotifyResult(@RequestBody String notifyData, HttpServletRequest request) {
         return orderService.doOrderNotify(notifyData, request);

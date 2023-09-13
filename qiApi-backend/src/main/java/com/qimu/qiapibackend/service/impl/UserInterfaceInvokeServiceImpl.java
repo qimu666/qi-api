@@ -12,6 +12,7 @@ import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.InterfaceInfoService;
 import com.qimu.qiapibackend.service.UserInterfaceInvokeService;
 import com.qimu.qiapibackend.service.UserService;
+import com.qimu.qiapibackend.utils.RedissonLockUtil;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,8 @@ public class UserInterfaceInvokeServiceImpl extends ServiceImpl<UserInterfaceInv
     private InterfaceInfoService interfaceInfoService;
     @Resource
     private UserService userService;
+    @Resource
+    private RedissonLockUtil redissonLockUtil;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -51,7 +54,8 @@ public class UserInterfaceInvokeServiceImpl extends ServiceImpl<UserInterfaceInv
         if (balance <= 0) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "余额不足，请先充值。");
         }
-        synchronized (userAccount.intern()) {
+        String redissonLock = ("invoke_" + userAccount).intern();
+        return redissonLockUtil.redissonDistributedLocks(redissonLock, () -> {
             LambdaQueryWrapper<UserInterfaceInvoke> invokeLambdaQueryWrapper = new LambdaQueryWrapper<>();
             invokeLambdaQueryWrapper.eq(UserInterfaceInvoke::getInterfaceId, interfaceInfoId);
             invokeLambdaQueryWrapper.eq(UserInterfaceInvoke::getUserId, userId);
@@ -80,7 +84,7 @@ public class UserInterfaceInvokeServiceImpl extends ServiceImpl<UserInterfaceInv
                 throw new BusinessException(ErrorCode.OPERATION_ERROR, "调用失败");
             }
             return true;
-        }
+        }, "调用失败");
     }
 }
 
