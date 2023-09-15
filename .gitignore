@@ -25,7 +25,7 @@ Post*
 
 application-prod.yml
 ### todo 暂时不提交
-qiApi-backend/src/main/resources/application.yml
+qi-api-backend/src/main/resources/application.yml
 apiclient_key.pem
 apiclient_cert.pem
 
