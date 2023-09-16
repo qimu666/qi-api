@@ -10,12 +10,12 @@ import com.qimu.qiapibackend.common.*;
 import com.qimu.qiapibackend.constant.CommonConstant;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.model.dto.interfaceinfo.*;
-import com.qimu.qiapibackend.model.entity.InterfaceInfo;
+import com.qimu.qiapicommon.model.entity.InterfaceInfo;
 import com.qimu.qiapibackend.model.enums.InterfaceStatusEnum;
 import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.InterfaceInfoService;
-import com.qimu.qiapibackend.service.UserInterfaceInvokeService;
 import com.qimu.qiapibackend.service.UserService;
+import com.qimu.qiapicommon.service.inner.InnerUserInterfaceInvokeService;
 import icu.qimuu.qiapisdk.client.QiApiClient;
 import icu.qimuu.qiapisdk.model.QiApiRequest;
 import icu.qimuu.qiapisdk.model.User;
@@ -24,6 +24,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StopWatch;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -48,7 +49,7 @@ public class InterfaceInfoController {
     @Resource
     private QiApiClient qiApiClient;
     @Resource
-    private UserInterfaceInvokeService userInterfaceInvokeService;
+    private InnerUserInterfaceInvokeService innerUserInterfaceInvokeService;
 
     private final Gson gson = new Gson();
     // region 增删改查
@@ -343,17 +344,15 @@ public class InterfaceInfoController {
         String accessKey = loginUser.getAccessKey();
         String secretKey = loginUser.getSecretKey();
         try {
+            // 计时
+            StopWatch stopWatch = new StopWatch();
+            stopWatch.start();
             QiApiClient qiApiClient = new QiApiClient(accessKey, secretKey);
             QiApiRequest qiApiRequest = JSONUtil.toBean(requestParams, QiApiRequest.class);
             icu.qimuu.qiapisdk.common.BaseResponse<User> baseResponse = qiApiClient.getNameByJsonPost(qiApiRequest);
-            if (baseResponse.getCode() != 0) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, baseResponse.getMessage());
-            }
-            boolean invoke = userInterfaceInvokeService.invoke(interfaceInfo, loginUser);
-            if (!invoke) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, baseResponse.getMessage());
-            }
-            return ResultUtils.success(qiApiClient.getNameByJsonPost(qiApiRequest));
+            stopWatch.stop();
+            long totalTimeMillis = stopWatch.getTotalTimeMillis();
+            return ResultUtils.success(baseResponse);
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, e.getMessage());
         }

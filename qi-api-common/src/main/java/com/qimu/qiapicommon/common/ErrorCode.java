@@ -1,4 +1,4 @@
-package com.qimu.qiapigateway;
+package com.qimu.qiapicommon.common;
 
 /**
  * 错误码

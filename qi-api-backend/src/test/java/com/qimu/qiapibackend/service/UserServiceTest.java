@@ -13,9 +13,10 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.qimu.qiapibackend.common.ErrorCode;
 import com.qimu.qiapibackend.exception.BusinessException;
-import com.qimu.qiapibackend.model.entity.InterfaceInfo;
+import com.qimu.qiapicommon.model.entity.InterfaceInfo;
 import com.qimu.qiapibackend.model.entity.User;
-import com.qimu.qiapibackend.model.vo.UserVO;
+import com.qimu.qiapicommon.model.vo.UserVO;
+import com.qimu.qiapicommon.service.inner.InnerUserInterfaceInvokeService;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.ObjectUtils;
 import org.junit.jupiter.api.Assertions;
@@ -26,6 +27,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import javax.annotation.Resource;
 import java.util.Date;
 import java.util.Map;
+
 
 /**
  * 用户服务测试
@@ -61,7 +63,7 @@ class UserServiceTest {
     @Resource
     private InterfaceInfoService interfaceInfoService;
     @Resource
-    private UserInterfaceInvokeService userInterfaceInvokeService;
+    private InnerUserInterfaceInvokeService innerUserInterfaceInvokeService;
 
     @Test
     void getCaptcha() {
@@ -72,12 +74,15 @@ class UserServiceTest {
     @Test
     void invoke() {
         InterfaceInfo interfaceInfo = interfaceInfoService.getById(1697274658264342530L);
+
         User user = userService.getById(1691069533871013889L);
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO);
         // userVO.setBalance(0);
         // userVO.setStatus(UserAccountStatusEnum.BAN.getValue());
-        boolean invoke = userInterfaceInvokeService.invoke(interfaceInfo, userVO);
+        com.qimu.qiapicommon.model.entity.InterfaceInfo newInterfaceInfo = new com.qimu.qiapicommon.model.entity.InterfaceInfo();
+        BeanUtils.copyProperties(interfaceInfo, newInterfaceInfo);
+        boolean invoke = innerUserInterfaceInvokeService.invoke(newInterfaceInfo, userVO);
         Assertions.assertTrue(invoke);
     }
 

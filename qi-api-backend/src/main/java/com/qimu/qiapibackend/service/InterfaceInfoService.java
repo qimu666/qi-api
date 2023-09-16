@@ -1,7 +1,8 @@
 package com.qimu.qiapibackend.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.qimu.qiapibackend.model.entity.InterfaceInfo;
+import com.qimu.qiapicommon.model.entity.InterfaceInfo;
+
 
 /**
  * @Author: QiMu

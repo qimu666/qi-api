@@ -28,24 +28,6 @@ public class NameController {
 
     @PostMapping(value = "/json")
     public BaseResponse<User> getNameByJsonPost(@RequestBody User user, HttpServletRequest request) {
-        // String body = request.getHeader("body");
-        // String accessKey = request.getHeader("accessKey");
-        // String timestamp = request.getHeader("timestamp");
-        // String sign = request.getHeader("sign");
-        //
-        // // 防重发XHR
-        // final long FIVE_MINUTES = (System.currentTimeMillis()) / 1000;
-        // if (Long.parseLong(timestamp) - FIVE_MINUTES <= 0) {
-        //     throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "会话已过期,请重试！");
-        // }
-        //
-        // if (!accessKey.equals("7052a8594339a519e0ba5eb04a267a60")) {
-        //     throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        // }
-        //
-        // if (!getSign(body, "d8d6df60ab209385a09ac796f1dfe3e1").equals(sign)) {
-        //     throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        // }
         return ResultUtils.success(user);
     }
 }

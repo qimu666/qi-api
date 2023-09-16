@@ -8,6 +8,10 @@ spring:
           uri: http://localhost:8081
           predicates:
             - Path=/api/**
+  redis:
+    port: 6379
+    host: localhost
+    database: 0
 logging:
   level:
     org:

@@ -1,4 +1,4 @@
-package com.qimu.qiapibackend.service.impl;
+package com.qimu.qiapibackend.service.inner.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -6,15 +6,15 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qimu.qiapibackend.common.ErrorCode;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.mapper.UserInterfaceInvokeMapper;
-import com.qimu.qiapibackend.model.entity.InterfaceInfo;
-import com.qimu.qiapibackend.model.entity.UserInterfaceInvoke;
-import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.InterfaceInfoService;
-import com.qimu.qiapibackend.service.UserInterfaceInvokeService;
 import com.qimu.qiapibackend.service.UserService;
 import com.qimu.qiapibackend.utils.RedissonLockUtil;
+import com.qimu.qiapicommon.model.entity.InterfaceInfo;
+import com.qimu.qiapicommon.model.entity.UserInterfaceInvoke;
+import com.qimu.qiapicommon.model.vo.UserVO;
+import com.qimu.qiapicommon.service.inner.InnerUserInterfaceInvokeService;
 import org.apache.commons.lang3.ObjectUtils;
-import org.springframework.stereotype.Service;
+import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
@@ -27,9 +27,9 @@ import static com.qimu.qiapibackend.model.enums.UserAccountStatusEnum.BAN;
  * @Version: 1.0
  * @Description: 用户界面调用服务impl
  */
-@Service
+@DubboService
 public class UserInterfaceInvokeServiceImpl extends ServiceImpl<UserInterfaceInvokeMapper, UserInterfaceInvoke>
-        implements UserInterfaceInvokeService {
+        implements InnerUserInterfaceInvokeService {
     @Resource
     private InterfaceInfoService interfaceInfoService;
     @Resource

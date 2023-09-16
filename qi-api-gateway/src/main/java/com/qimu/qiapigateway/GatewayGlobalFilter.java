@@ -1,7 +1,16 @@
 package com.qimu.qiapigateway;
 
+import com.qimu.qiapicommon.common.ErrorCode;
+import com.qimu.qiapicommon.model.entity.InterfaceInfo;
+import com.qimu.qiapicommon.model.vo.UserVO;
+import com.qimu.qiapicommon.service.inner.InnerInterfaceInfoService;
+import com.qimu.qiapicommon.service.inner.InnerUserInterfaceInvokeService;
+import com.qimu.qiapicommon.service.inner.InnerUserService;
+import com.qimu.qiapigateway.exception.BusinessException;
+import com.qimu.qiapigateway.utils.RedissonLockUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.reactivestreams.Publisher;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -19,6 +28,8 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.Resource;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
@@ -44,6 +55,14 @@ public class GatewayGlobalFilter implements GlobalFilter, Ordered {
      * 五分钟过期时间
      */
     private static final long FIVE_MINUTES = 5L * 60;
+    @Resource
+    private RedissonLockUtil redissonLockUtil;
+    @DubboReference
+    private InnerUserService innerUserService;
+    @DubboReference
+    private InnerUserInterfaceInvokeService interfaceInvokeService;
+    @DubboReference
+    private InnerInterfaceInfoService interfaceInfoService;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -55,6 +74,8 @@ public class GatewayGlobalFilter implements GlobalFilter, Ordered {
             log.info("请求路径：" + request.getPath());
             log.info("网关本地地址：" + request.getLocalAddress());
             log.info("请求远程地址：" + request.getRemoteAddress());
+            URI uri = request.getURI();
+            log.info("url:" + uri);
             // 黑白名单
             if (!WHITE_HOST_LIST.contains(Objects.requireNonNull(request.getRemoteAddress()).getHostString())) {
                 throw new BusinessException(ErrorCode.FORBIDDEN_ERROR);
@@ -74,18 +95,35 @@ public class GatewayGlobalFilter implements GlobalFilter, Ordered {
             if (currentTime - Long.parseLong(timestamp) >= FIVE_MINUTES) {
                 throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "会话已过期,请重试！");
             }
+            UserVO user;
+            try {
+                user = innerUserService.getInvokeUserByAccessKey(accessKey);
+            } catch (BusinessException e) {
+                throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, e.getMessage());
+            }
+            if (user == null) {
+                throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "账号不存在");
+            }
             // 校验accessKey
-            if (!"7052a8594339a519e0ba5eb04a267a60".equals(accessKey)) {
+            if (!user.getAccessKey().equals(accessKey)) {
                 throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
             }
             // 校验签名
-            if (!getSign(body, "d8d6df60ab209385a09ac796f1dfe3e1").equals(sign)) {
+            if (!getSign(body, user.getSecretKey()).equals(sign)) {
                 throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
             }
-            // todo 校验请求的接口是否存在，url ,请求方法是否匹配
-
-            return handleResponse(exchange, chain);
-
+            String path = request.getPath().value();
+            String method = Objects.requireNonNull(request.getMethod()).toString();
+            InterfaceInfo interfaceInfo;
+            try {
+                interfaceInfo = interfaceInfoService.getInterfaceInfo(path, method);
+            } catch (Exception e) {
+                throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, e.getMessage());
+            }
+            if (interfaceInfo == null) {
+                throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "接口不存在");
+            }
+            return handleResponse(exchange, chain, user, interfaceInfo);
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, e.getMessage());
         }
@@ -98,7 +136,7 @@ public class GatewayGlobalFilter implements GlobalFilter, Ordered {
      * @param chain    链条
      * @return {@link Mono}<{@link Void}>
      */
-    public Mono<Void> handleResponse(ServerWebExchange exchange, GatewayFilterChain chain) {
+    public Mono<Void> handleResponse(ServerWebExchange exchange, GatewayFilterChain chain, UserVO user, InterfaceInfo interfaceInfo) {
         ServerHttpResponse originalResponse = exchange.getResponse();
         // 缓存数据的工厂
         DataBufferFactory bufferFactory = originalResponse.bufferFactory();
@@ -110,18 +148,23 @@ public class GatewayGlobalFilter implements GlobalFilter, Ordered {
                 // 等调用完转发的接口后才会执行
                 @Override
                 public Mono<Void> writeWith(Publisher<? extends DataBuffer> body) {
-                    log.info("body instanceof Flux: {}", (body instanceof Flux));
                     if (body instanceof Flux) {
                         Flux<? extends DataBuffer> fluxBody = Flux.from(body);
                         // 往返回值里写数据
                         return super.writeWith(
                                 fluxBody.map(dataBuffer -> {
                                     // 扣除积分
+                                    redissonLockUtil.redissonDistributedLocks(("gateway_" + user.getUserAccount()).intern(), () -> {
+                                        boolean invoke = interfaceInvokeService.invoke(interfaceInfo, user);
+                                        if (!invoke) {
+                                            throw new BusinessException(ErrorCode.OPERATION_ERROR, "接口调用失败");
+                                        }
+                                    });
                                     byte[] content = new byte[dataBuffer.readableByteCount()];
                                     dataBuffer.read(content);
                                     // 释放掉内存
                                     DataBufferUtils.release(dataBuffer);
-                                    String data = new String(content, StandardCharsets.UTF_8); // data
+                                    String data = new String(content, StandardCharsets.UTF_8);
                                     // 打印日志
                                     log.info("响应结果：" + data);
                                     return bufferFactory.wrap(content);

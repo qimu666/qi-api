@@ -1,7 +1,9 @@
-package com.qimu.qiapigateway;
+package com.qimu.qiapigateway.exception;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.qimu.qiapicommon.common.BaseResponse;
+import com.qimu.qiapicommon.common.ResultUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;

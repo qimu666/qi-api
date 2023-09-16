@@ -1,4 +1,6 @@
-package com.qimu.qiapigateway;
+package com.qimu.qiapigateway.exception;
+
+import com.qimu.qiapicommon.common.ErrorCode;
 
 /**
  * @Author: QiMu

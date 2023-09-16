@@ -1,7 +1,7 @@
 package com.qimu.qiapibackend.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.qimu.qiapibackend.model.entity.InterfaceInfo;
+import com.qimu.qiapicommon.model.entity.InterfaceInfo;
 
 /**
  * @Author: QiMu
