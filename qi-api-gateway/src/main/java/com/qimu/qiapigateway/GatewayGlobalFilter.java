@@ -1,6 +1,10 @@
 package com.qimu.qiapigateway;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.qimu.qiapicommon.common.ErrorCode;
+import com.qimu.qiapicommon.model.dto.RequestParamsField;
+import com.qimu.qiapicommon.model.emums.InterfaceStatusEnum;
 import com.qimu.qiapicommon.model.entity.InterfaceInfo;
 import com.qimu.qiapicommon.model.vo.UserVO;
 import com.qimu.qiapicommon.service.inner.InnerInterfaceInfoService;
@@ -24,17 +28,18 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.http.server.reactive.ServerHttpResponseDecorator;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.Resource;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import static com.qimu.qiapicommon.model.emums.UserAccountStatusEnum.BAN;
 import static icu.qimuu.qiapisdk.utils.SignUtils.getSign;
 
 
@@ -66,62 +71,90 @@ public class GatewayGlobalFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        // 日志
+        ServerHttpRequest request = exchange.getRequest();
+        log.info("请求唯一id：" + request.getId());
+        log.info("请求参数：" + request.getQueryParams());
+        log.info("请求方法：" + request.getMethod());
+        log.info("请求路径：" + request.getPath());
+        log.info("网关本地地址：" + request.getLocalAddress());
+        log.info("请求远程地址：" + request.getRemoteAddress());
+        log.info("url:" + request.getURI());
+        return verifyParameters(exchange, chain);
+    }
+
+    /**
+     * 验证参数
+     *
+     * @param exchange 交换
+     * @param chain    链条
+     * @return {@link Mono}<{@link Void}>
+     */
+    private Mono<Void> verifyParameters(ServerWebExchange exchange, GatewayFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        // 请求白名单
+        if (!WHITE_HOST_LIST.contains(Objects.requireNonNull(request.getRemoteAddress()).getHostString())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_ERROR);
+        }
+        HttpHeaders headers = request.getHeaders();
+        String body = headers.getFirst("body");
+        String accessKey = headers.getFirst("accessKey");
+        String timestamp = headers.getFirst("timestamp");
+        String sign = headers.getFirst("sign");
+        // 请求头中参数必须完整
+        if (StringUtils.isAnyBlank(body, sign, accessKey, timestamp)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_ERROR);
+        }
+        // 防重发XHR
+        long currentTime = System.currentTimeMillis() / 1000;
+        assert timestamp != null;
+        if (currentTime - Long.parseLong(timestamp) >= FIVE_MINUTES) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "会话已过期,请重试！");
+        }
         try {
-            ServerHttpRequest request = exchange.getRequest();
-            log.info("请求唯一id：" + request.getId());
-            log.info("请求参数：" + request.getQueryParams());
-            log.info("请求方法：" + request.getMethod());
-            log.info("请求路径：" + request.getPath());
-            log.info("网关本地地址：" + request.getLocalAddress());
-            log.info("请求远程地址：" + request.getRemoteAddress());
-            URI uri = request.getURI();
-            log.info("url:" + uri);
-            // 黑白名单
-            if (!WHITE_HOST_LIST.contains(Objects.requireNonNull(request.getRemoteAddress()).getHostString())) {
-                throw new BusinessException(ErrorCode.FORBIDDEN_ERROR);
-            }
-            HttpHeaders headers = request.getHeaders();
-            String body = headers.getFirst("body");
-            String accessKey = headers.getFirst("accessKey");
-            String timestamp = headers.getFirst("timestamp");
-            String sign = headers.getFirst("sign");
-            // 请求头中参数必须完整
-            if (StringUtils.isAnyBlank(body, sign, accessKey, timestamp)) {
-                throw new BusinessException(ErrorCode.FORBIDDEN_ERROR);
-            }
-            // 防重发XHR
-            long currentTime = System.currentTimeMillis() / 1000;
-            assert timestamp != null;
-            if (currentTime - Long.parseLong(timestamp) >= FIVE_MINUTES) {
-                throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "会话已过期,请重试！");
-            }
-            UserVO user;
-            try {
-                user = innerUserService.getInvokeUserByAccessKey(accessKey);
-            } catch (BusinessException e) {
-                throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, e.getMessage());
-            }
+            UserVO user = innerUserService.getInvokeUserByAccessKey(accessKey);
             if (user == null) {
                 throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "账号不存在");
             }
             // 校验accessKey
             if (!user.getAccessKey().equals(accessKey)) {
-                throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+                throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "请先获取请求密钥");
+            }
+            if (user.getStatus().equals(BAN.getValue())) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "该账号已封禁");
             }
             // 校验签名
             if (!getSign(body, user.getSecretKey()).equals(sign)) {
-                throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+                throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "非法请求");
             }
-            String path = request.getPath().value();
+            if (user.getBalance() <= 0) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "余额不足，请先充值。");
+            }
             String method = Objects.requireNonNull(request.getMethod()).toString();
-            InterfaceInfo interfaceInfo;
-            try {
-                interfaceInfo = interfaceInfoService.getInterfaceInfo(path, method);
-            } catch (Exception e) {
-                throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, e.getMessage());
+            String uri = request.getURI().toString().trim();
+
+            if (StringUtils.isAnyBlank(uri, method)) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR);
             }
+            InterfaceInfo interfaceInfo = interfaceInfoService.getInterfaceInfo(uri, method);
+
             if (interfaceInfo == null) {
                 throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "接口不存在");
+            }
+            if (interfaceInfo.getStatus() != InterfaceStatusEnum.ONLINE.getValue()) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "接口未开启");
+            }
+            MultiValueMap<String, String> queryParams = request.getQueryParams();
+            String requestParams = interfaceInfo.getRequestParams();
+            List<RequestParamsField> list = new Gson().fromJson(requestParams, new TypeToken<List<RequestParamsField>>() {
+            }.getType());
+            // 校验请求参数
+            for (RequestParamsField requestParamsField : list) {
+                if ("是".equals(requestParamsField.getRequired())) {
+                    if (StringUtils.isBlank(queryParams.getFirst(requestParamsField.getFieldName())) || !queryParams.containsKey(requestParamsField.getFieldName())) {
+                        throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "必选项未设置");
+                    }
+                }
             }
             return handleResponse(exchange, chain, user, interfaceInfo);
         } catch (Exception e) {
@@ -155,11 +188,11 @@ public class GatewayGlobalFilter implements GlobalFilter, Ordered {
                                 fluxBody.map(dataBuffer -> {
                                     // 扣除积分
                                     redissonLockUtil.redissonDistributedLocks(("gateway_" + user.getUserAccount()).intern(), () -> {
-                                        boolean invoke = interfaceInvokeService.invoke(interfaceInfo, user);
+                                        boolean invoke = interfaceInvokeService.invoke(interfaceInfo.getId(), user.getId(), interfaceInfo.getReduceScore());
                                         if (!invoke) {
                                             throw new BusinessException(ErrorCode.OPERATION_ERROR, "接口调用失败");
                                         }
-                                    });
+                                    }, "接口调用失败");
                                     byte[] content = new byte[dataBuffer.readableByteCount()];
                                     dataBuffer.read(content);
                                     // 释放掉内存

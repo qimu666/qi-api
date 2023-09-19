@@ -5,31 +5,31 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import com.qimu.qiapibackend.annotation.AuthCheck;
 import com.qimu.qiapibackend.common.*;
 import com.qimu.qiapibackend.constant.CommonConstant;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.model.dto.interfaceinfo.*;
-import com.qimu.qiapicommon.model.entity.InterfaceInfo;
 import com.qimu.qiapibackend.model.enums.InterfaceStatusEnum;
 import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.InterfaceInfoService;
 import com.qimu.qiapibackend.service.UserService;
-import com.qimu.qiapicommon.service.inner.InnerUserInterfaceInvokeService;
+import com.qimu.qiapicommon.model.entity.InterfaceInfo;
 import icu.qimuu.qiapisdk.client.QiApiClient;
-import icu.qimuu.qiapisdk.model.QiApiRequest;
-import icu.qimuu.qiapisdk.model.User;
+import icu.qimuu.qiapisdk.model.request.CurrencyRequest;
+import icu.qimuu.qiapisdk.service.ApiService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StopWatch;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Map;
 
 import static com.qimu.qiapibackend.constant.UserConstant.ADMIN_ROLE;
 
@@ -47,9 +47,7 @@ public class InterfaceInfoController {
     @Resource
     private UserService userService;
     @Resource
-    private QiApiClient qiApiClient;
-    @Resource
-    private InnerUserInterfaceInvokeService innerUserInterfaceInvokeService;
+    private ApiService apiService;
 
     private final Gson gson = new Gson();
     // region 增删改查
@@ -70,6 +68,8 @@ public class InterfaceInfoController {
         InterfaceInfo interfaceInfo = new InterfaceInfo();
         String requestParams = JSONUtil.toJsonStr(interfaceInfoAddRequest.getRequestParams());
         interfaceInfo.setRequestParams(requestParams);
+        String responseParams = JSONUtil.toJsonStr(interfaceInfoAddRequest.getResponseParams());
+        interfaceInfo.setResponseParams(responseParams);
         BeanUtils.copyProperties(interfaceInfoAddRequest, interfaceInfo);
         // 校验
         interfaceInfoService.validInterfaceInfo(interfaceInfo, true);
@@ -129,6 +129,8 @@ public class InterfaceInfoController {
         InterfaceInfo interfaceInfo = new InterfaceInfo();
         String requestParams = JSONUtil.toJsonStr(interfaceInfoUpdateRequest.getRequestParams());
         interfaceInfo.setRequestParams(requestParams);
+        String responseParams = JSONUtil.toJsonStr(interfaceInfoUpdateRequest.getResponseParams());
+        interfaceInfo.setResponseParams(responseParams);
         BeanUtils.copyProperties(interfaceInfoUpdateRequest, interfaceInfo);
         // 参数校验
         interfaceInfoService.validInterfaceInfo(interfaceInfo, false);
@@ -208,7 +210,7 @@ public class InterfaceInfoController {
         String description = interfaceInfoQueryRequest.getDescription();
         Integer status = interfaceInfoQueryRequest.getStatus();
         Integer reduceScore = interfaceInfoQueryRequest.getReduceScore();
-
+        String returnFormat = interfaceInfoQueryRequest.getReturnFormat();
         // 限制爬虫
         if (size > 50) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -217,6 +219,7 @@ public class InterfaceInfoController {
         queryWrapper.like(StringUtils.isNotBlank(name), "name", name)
                 .like(StringUtils.isNotBlank(description), "description", description)
                 .like(StringUtils.isNotBlank(url), "url", url)
+                .like(StringUtils.isNotBlank(returnFormat), "returnFormat", returnFormat)
                 .eq(StringUtils.isNotBlank(method), "method", method)
                 .eq(ObjectUtils.isNotEmpty(status), "status", status)
                 .eq(ObjectUtils.isNotEmpty(reduceScore), "reduceScore", reduceScore);
@@ -263,7 +266,7 @@ public class InterfaceInfoController {
      */
     @AuthCheck(mustRole = ADMIN_ROLE)
     @PostMapping("/online")
-    public BaseResponse<Boolean> onlineInterfaceInfo(@RequestBody IdRequest idRequest) {
+    public BaseResponse<Boolean> onlineInterfaceInfo(@RequestBody IdRequest idRequest, HttpServletRequest request) {
         if (ObjectUtils.anyNull(idRequest, idRequest.getId()) || idRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -271,14 +274,6 @@ public class InterfaceInfoController {
         InterfaceInfo interfaceInfo = interfaceInfoService.getById(id);
         if (interfaceInfo == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
-        }
-
-        QiApiRequest qiApiRequest = new QiApiRequest();
-        qiApiRequest.setName("test");
-        icu.qimuu.qiapisdk.common.BaseResponse<icu.qimuu.qiapisdk.model.User> nameByJsonPost = qiApiClient.getNameByJsonPost(qiApiRequest);
-        System.err.println(nameByJsonPost);
-        if (ObjectUtils.isEmpty(nameByJsonPost.getData()) && nameByJsonPost.getCode() != 0) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, nameByJsonPost.getMessage());
         }
         interfaceInfo.setStatus(InterfaceStatusEnum.ONLINE.getValue());
         return ResultUtils.success(interfaceInfoService.updateById(interfaceInfo));
@@ -321,6 +316,14 @@ public class InterfaceInfoController {
         if (ObjectUtils.anyNull(invokeRequest, invokeRequest.getId()) || invokeRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        Long id = invokeRequest.getId();
+        InterfaceInfo interfaceInfo = interfaceInfoService.getById(id);
+        if (interfaceInfo == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        if (interfaceInfo.getStatus() != InterfaceStatusEnum.ONLINE.getValue()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "接口未开启");
+        }
         // 构建请求参数
         List<InvokeRequest.Field> fieldList = invokeRequest.getRequestParams();
         String requestParams = "{}";
@@ -331,28 +334,20 @@ public class InterfaceInfoController {
             }
             requestParams = gson.toJson(jsonObject);
         }
-
-        Long id = invokeRequest.getId();
-        InterfaceInfo interfaceInfo = interfaceInfoService.getById(id);
-        if (interfaceInfo == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
-        }
-        if (interfaceInfo.getStatus() != InterfaceStatusEnum.ONLINE.getValue()) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "接口未开启");
-        }
+        Map<String, Object> params = new Gson().fromJson(requestParams, new TypeToken<Map<String, Object>>() {
+        }.getType());
         UserVO loginUser = userService.getLoginUser(request);
         String accessKey = loginUser.getAccessKey();
         String secretKey = loginUser.getSecretKey();
         try {
             // 计时
-            StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
             QiApiClient qiApiClient = new QiApiClient(accessKey, secretKey);
-            QiApiRequest qiApiRequest = JSONUtil.toBean(requestParams, QiApiRequest.class);
-            icu.qimuu.qiapisdk.common.BaseResponse<User> baseResponse = qiApiClient.getNameByJsonPost(qiApiRequest);
-            stopWatch.stop();
-            long totalTimeMillis = stopWatch.getTotalTimeMillis();
-            return ResultUtils.success(baseResponse);
+            CurrencyRequest currencyRequest = new CurrencyRequest();
+            currencyRequest.setMethod(interfaceInfo.getMethod());
+            currencyRequest.setPath(interfaceInfo.getUrl());
+            currencyRequest.setRequestParams(params);
+            icu.qimuu.qiapisdk.model.response.BaseResponse response = apiService.request(qiApiClient, currencyRequest);
+            return ResultUtils.success(response.getData());
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, e.getMessage());
         }

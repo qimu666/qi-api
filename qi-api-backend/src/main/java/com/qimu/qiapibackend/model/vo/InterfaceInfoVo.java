@@ -1,7 +1,7 @@
 package com.qimu.qiapibackend.model.vo;
 
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
-import com.qimu.qiapibackend.model.entity.InterfaceInfo;
+import com.qimu.qiapicommon.model.entity.InterfaceInfo;
 import lombok.Data;
 
 import java.io.Serializable;

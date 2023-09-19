@@ -19,11 +19,18 @@ public class InterfaceInfoAddRequest implements Serializable {
      * 接口名称
      */
     private String name;
-
+    /**
+     * 返回格式
+     */
+    private String returnFormat;
     /**
      * 接口地址
      */
     private String url;
+    /**
+     * 接口响应参数
+     */
+    private List<ResponseParamsField> responseParams;
     /**
      * 请求方法
      */

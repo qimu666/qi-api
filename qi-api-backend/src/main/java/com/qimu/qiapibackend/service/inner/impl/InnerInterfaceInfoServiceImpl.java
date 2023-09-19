@@ -1,12 +1,9 @@
 package com.qimu.qiapibackend.service.inner.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.qimu.qiapibackend.common.ErrorCode;
-import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.service.InterfaceInfoService;
 import com.qimu.qiapicommon.model.entity.InterfaceInfo;
 import com.qimu.qiapicommon.service.inner.InnerInterfaceInfoService;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.DubboService;
 
 import javax.annotation.Resource;
@@ -24,12 +21,13 @@ public class InnerInterfaceInfoServiceImpl implements InnerInterfaceInfoService 
 
     @Override
     public InterfaceInfo getInterfaceInfo(String path, String method) {
-        if (StringUtils.isAnyBlank(path,method)){
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        // 如果带参数，去除第一个？和之后后的参数
+        if (path.contains("?")) {
+            path = path.substring(0, path.indexOf("?"));
         }
         LambdaQueryWrapper<InterfaceInfo> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(InterfaceInfo::getMethod, method);
-        lambdaQueryWrapper.like(InterfaceInfo::getUrl, path);
+        lambdaQueryWrapper.eq(InterfaceInfo::getUrl, path);
         return interfaceInfoService.getOne(lambdaQueryWrapper);
     }
 }

@@ -23,6 +23,10 @@ public class InterfaceInfo implements Serializable {
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     /**
+     * 返回格式
+     */
+    private String returnFormat;
+    /**
      * 接口名称
      */
     private String name;
@@ -47,6 +51,10 @@ public class InterfaceInfo implements Serializable {
      * 接口请求参数
      */
     private String requestParams;
+    /**
+     * 接口响应参数
+     */
+    private String responseParams;
     /**
      * 描述信息
      */

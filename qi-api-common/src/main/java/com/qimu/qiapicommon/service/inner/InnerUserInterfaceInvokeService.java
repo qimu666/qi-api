@@ -12,11 +12,13 @@ import com.qimu.qiapicommon.model.vo.UserVO;
 public interface InnerUserInterfaceInvokeService {
 
     /**
+     * 援引
      * 接口调用
      *
-     * @param interfaceInfo 接口信息
-     * @param userVO        用户vo
+     * @param interfaceInfoId 接口信息id
+     * @param userId          用户id
+     * @param reduceScore     降低分数
      * @return boolean
      */
-    boolean invoke(InterfaceInfo interfaceInfo, UserVO userVO);
+    boolean invoke(Long interfaceInfoId, Long userId, Integer reduceScore);
 }

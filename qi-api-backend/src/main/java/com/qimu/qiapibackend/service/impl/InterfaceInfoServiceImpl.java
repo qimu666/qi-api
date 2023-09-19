@@ -2,8 +2,6 @@ package com.qimu.qiapibackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.qimu.qiapibackend.common.ErrorCode;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.mapper.InterfaceInfoMapper;
@@ -12,8 +10,6 @@ import com.qimu.qiapicommon.model.entity.InterfaceInfo;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
 
 /**
  * @Author: QiMu
@@ -32,6 +28,7 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         String url = interfaceInfo.getUrl();
         Long userId = interfaceInfo.getUserId();
         String method = interfaceInfo.getMethod();
+
         String requestParams = interfaceInfo.getRequestParams();
         String description = interfaceInfo.getDescription();
         String requestExample = interfaceInfo.getRequestExample();
@@ -45,6 +42,12 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
                 throw new BusinessException(ErrorCode.PARAMS_ERROR);
             }
         }
+        if (StringUtils.isNotBlank(method)) {
+            interfaceInfo.setMethod(method.trim().toUpperCase());
+        }
+        if (StringUtils.isNotBlank(url)) {
+            interfaceInfo.setUrl(url.trim());
+        }
         if (ObjectUtils.isNotEmpty(reduceScore) && reduceScore < 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "扣除积分个数不能为负数");
         }
@@ -57,14 +60,6 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         }
     }
 
-
-    private void checkHeaders(String header) {
-        Map<String, String> headerHeaderMap = new Gson().fromJson(header, new TypeToken<Map<String, String>>() {
-        }.getType());
-        if ((ObjectUtils.anyNull(headerHeaderMap, headerHeaderMap.get("Content-Type"))) || !"application/json".equals(headerHeaderMap.get("Content-Type"))) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "响应头必须是JSON格式");
-        }
-    }
 
     @Override
     public boolean updateTotalInvokes(long interfaceId) {

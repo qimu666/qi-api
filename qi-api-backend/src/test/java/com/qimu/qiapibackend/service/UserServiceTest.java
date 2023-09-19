@@ -13,8 +13,8 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.qimu.qiapibackend.common.ErrorCode;
 import com.qimu.qiapibackend.exception.BusinessException;
-import com.qimu.qiapicommon.model.entity.InterfaceInfo;
 import com.qimu.qiapibackend.model.entity.User;
+import com.qimu.qiapicommon.model.entity.InterfaceInfo;
 import com.qimu.qiapicommon.model.vo.UserVO;
 import com.qimu.qiapicommon.service.inner.InnerUserInterfaceInvokeService;
 import lombok.SneakyThrows;
@@ -82,7 +82,7 @@ class UserServiceTest {
         // userVO.setStatus(UserAccountStatusEnum.BAN.getValue());
         com.qimu.qiapicommon.model.entity.InterfaceInfo newInterfaceInfo = new com.qimu.qiapicommon.model.entity.InterfaceInfo();
         BeanUtils.copyProperties(interfaceInfo, newInterfaceInfo);
-        boolean invoke = innerUserInterfaceInvokeService.invoke(newInterfaceInfo, userVO);
+        boolean invoke = innerUserInterfaceInvokeService.invoke(newInterfaceInfo.getId(), user.getId(), interfaceInfo.getReduceScore());
         Assertions.assertTrue(invoke);
     }
 

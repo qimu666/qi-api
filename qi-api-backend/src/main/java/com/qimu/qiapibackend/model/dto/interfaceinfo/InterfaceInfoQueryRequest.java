@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * @Author: QiMu
@@ -22,9 +23,17 @@ public class InterfaceInfoQueryRequest extends PageRequest implements Serializab
      */
     private String name;
     /**
+     * 返回格式
+     */
+    private String returnFormat;
+    /**
      * 接口地址
      */
     private String url;
+    /**
+     * 接口响应参数
+     */
+    private List<ResponseParamsField> responseParams;
     /**
      * 发布人
      */
