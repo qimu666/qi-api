@@ -4,15 +4,17 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONUtil;
 import icu.qimuu.qiapisdk.exception.BusinessException;
-import icu.qimuu.qiapisdk.exception.ErrorCode;
+import icu.qimuu.qiapisdk.model.params.NameParams;
 import icu.qimuu.qiapisdk.model.params.RandomWallpaperParams;
+import icu.qimuu.qiapisdk.model.request.NameRequest;
+import icu.qimuu.qiapisdk.model.response.NameResponse;
 import icu.qimuu.qiapisdk.model.response.RandomWallpaperResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.lang.reflect.Field;
+import static com.qimu.qiapiinterface.utils.UrlUtils.buildUrl;
 
 
 /**
@@ -26,8 +28,8 @@ import java.lang.reflect.Field;
 public class ServiceController {
 
     @GetMapping("name")
-    public String getName(String name) {
-        return name;
+    public NameResponse getName(NameParams nameParams) {
+        return JSONUtil.toBean(JSONUtil.toJsonStr(nameParams), NameResponse.class);
     }
 
     @GetMapping("/poisonousChickenSoup")
@@ -48,33 +50,5 @@ public class ServiceController {
         HttpResponse execute = HttpRequest.get(url).execute();
         String body = execute.body();
         return JSONUtil.toBean(body, RandomWallpaperResponse.class);
-    }
-
-    public <T> String buildUrl(String baseUrl, T params) throws BusinessException {
-        StringBuilder url = new StringBuilder(baseUrl);
-        Field[] fields = params.getClass().getDeclaredFields();
-        boolean isFirstParam = true;
-        for (Field field : fields) {
-            field.setAccessible(true);
-            String name = field.getName();
-            // 跳过serialVersionUID属性
-            if ("serialVersionUID".equals(name)) {
-                continue;
-            }
-            try {
-                Object value = field.get(params);
-                if (value != null) {
-                    if (isFirstParam) {
-                        url.append("?").append(name).append("=").append(value);
-                        isFirstParam = false;
-                    } else {
-                        url.append("&").append(name).append("=").append(value);
-                    }
-                }
-            } catch (IllegalAccessException e) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, "构建url异常");
-            }
-        }
-        return url.toString();
     }
 }

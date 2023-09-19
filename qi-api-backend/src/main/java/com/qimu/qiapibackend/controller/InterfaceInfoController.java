@@ -30,6 +30,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.qimu.qiapibackend.constant.UserConstant.ADMIN_ROLE;
 
@@ -66,9 +67,11 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         InterfaceInfo interfaceInfo = new InterfaceInfo();
-        String requestParams = JSONUtil.toJsonStr(interfaceInfoAddRequest.getRequestParams());
+        List<RequestParamsField> requestParamsFields = interfaceInfoAddRequest.getRequestParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
+        List<ResponseParamsField> responseParamsFields = interfaceInfoAddRequest.getResponseParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
+        String requestParams = JSONUtil.toJsonStr(requestParamsFields);
         interfaceInfo.setRequestParams(requestParams);
-        String responseParams = JSONUtil.toJsonStr(interfaceInfoAddRequest.getResponseParams());
+        String responseParams = JSONUtil.toJsonStr(responseParamsFields);
         interfaceInfo.setResponseParams(responseParams);
         BeanUtils.copyProperties(interfaceInfoAddRequest, interfaceInfo);
         // 校验
@@ -127,9 +130,11 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         InterfaceInfo interfaceInfo = new InterfaceInfo();
-        String requestParams = JSONUtil.toJsonStr(interfaceInfoUpdateRequest.getRequestParams());
+        List<RequestParamsField> requestParamsFields = interfaceInfoUpdateRequest.getRequestParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
+        List<ResponseParamsField> responseParamsFields = interfaceInfoUpdateRequest.getResponseParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
+        String requestParams = JSONUtil.toJsonStr(requestParamsFields);
         interfaceInfo.setRequestParams(requestParams);
-        String responseParams = JSONUtil.toJsonStr(interfaceInfoUpdateRequest.getResponseParams());
+        String responseParams = JSONUtil.toJsonStr(responseParamsFields);
         interfaceInfo.setResponseParams(responseParams);
         BeanUtils.copyProperties(interfaceInfoUpdateRequest, interfaceInfo);
         // 参数校验

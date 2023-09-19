@@ -15,7 +15,6 @@ create table if not exists qi_api_db.user
     gender         varchar(10)                            null comment '性别 0-男 1-女',
     userRole       varchar(256) default 'user'            not null comment '用户角色：user / admin',
     userPassword   varchar(512)                           null comment '密码',
-    returnFormat   varchar(512) default 'JSON'            null comment '返回格式(JSON等等)',
     accessKey      varchar(256)                           null comment 'accessKey',
     secretKey      varchar(256)                           null comment 'secretKey',
     balance        bigint       default 30                not null comment '钱包余额,注册送30币',
@@ -45,23 +44,24 @@ create table if not exists qi_api_db.daily_check_in
 create table if not exists qi_api_db.interface_info
 (
     id             bigint auto_increment comment 'id' primary key,
-    name           varchar(256)                       not null comment '接口名称',
-    url            varchar(256)                       not null comment '接口地址',
-    userId         bigint                             null comment '发布人',
-    method         varchar(256)                       not null comment '请求方法',
-    requestParams  text                               null comment '接口请求参数',
-    responseParams text                               null comment '接口响应参数',
-    reduceScore    bigint   default 0                 null comment '扣除积分数',
-    requestExample text                               null comment '请求示例',
-    requestHeader  text                               null comment '请求头',
-    responseHeader text                               null comment '响应头',
-    description    varchar(256)                       null comment '描述信息',
-    status         tinyint  default 0                 not null comment '接口状态（0- 默认下线 1- 上线）',
-    totalInvokes   bigint   default 0                 not null comment '接口总调用次数',
-    avatarUrl      varchar(1024)                      null comment '接口头像',
-    createTime     datetime default CURRENT_TIMESTAMP not null comment '创建时间',
-    updateTime     datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
-    isDelete       tinyint  default 0                 not null comment '是否删除'
+    name           varchar(256)                           not null comment '接口名称',
+    url            varchar(256)                           not null comment '接口地址',
+    userId         bigint                                 null comment '发布人',
+    method         varchar(256)                           not null comment '请求方法',
+    requestParams  text                                   null comment '接口请求参数',
+    responseParams text                                   null comment '接口响应参数',
+    reduceScore    bigint       default 0                 null comment '扣除积分数',
+    requestExample text                                   null comment '请求示例',
+    requestHeader  text                                   null comment '请求头',
+    responseHeader text                                   null comment '响应头',
+    returnFormat   varchar(512) default 'JSON'            null comment '返回格式(JSON等等)',
+    description    varchar(256)                           null comment '描述信息',
+    status         tinyint      default 0                 not null comment '接口状态（0- 默认下线 1- 上线）',
+    totalInvokes   bigint       default 0                 not null comment '接口总调用次数',
+    avatarUrl      varchar(1024)                          null comment '接口头像',
+    createTime     datetime     default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime     datetime     default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete       tinyint      default 0                 not null comment '是否删除'
 )
     comment '接口信息';
 
@@ -99,8 +99,7 @@ create table if not exists qi_api_db.product_order
     payType        varchar(256) default 'WX'              not null comment '支付方式（默认 WX- 微信 ZFB- 支付宝）',
     productInfo    text                                   null comment '商品信息',
     formData       text                                   null comment '支付宝formData',
-    addPoints      bigint       default 0                 not null comment '增加积分个数
-',
+    addPoints      bigint       default 0                 not null comment '增加积分个数',
     expirationTime datetime                               null comment '过期时间',
     createTime     datetime     default CURRENT_TIMESTAMP not null comment '创建时间',
     updateTime     datetime     default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间'
