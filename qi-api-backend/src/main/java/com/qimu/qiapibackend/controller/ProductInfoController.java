@@ -206,9 +206,7 @@ public class ProductInfoController {
         QueryWrapper<ProductInfo> queryWrapper = new QueryWrapper<>();
         queryWrapper.like(StringUtils.isNotBlank(name), "name", name)
                 .like(StringUtils.isNotBlank(description), "description", description)
-                .eq(ObjectUtils.isNotEmpty(productType), "productType", productType)
-                .eq(ObjectUtils.isNotEmpty(productType), "productType", productType)
-                .eq(ObjectUtils.isNotEmpty(productType), "productType", productType)
+                .eq(StringUtils.isNotBlank(productType), "productType", productType)
                 .eq(ObjectUtils.isNotEmpty(addPoints), "addPoints", addPoints)
                 .eq(ObjectUtils.isNotEmpty(total), "total", total);
         // 根据金额升序排列

@@ -9,10 +9,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.qimu.qiapibackend.common.ErrorCode;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.mapper.UserMapper;
-import com.qimu.qiapibackend.model.dto.user.UserBindEmailRequest;
-import com.qimu.qiapibackend.model.dto.user.UserEmailLoginRequest;
-import com.qimu.qiapibackend.model.dto.user.UserEmailRegisterRequest;
-import com.qimu.qiapibackend.model.dto.user.UserRegisterRequest;
+import com.qimu.qiapibackend.model.dto.user.*;
 import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.enums.UserAccountStatusEnum;
 import com.qimu.qiapibackend.model.vo.UserVO;
@@ -292,34 +289,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         // 查询用户是否存在
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("userAccount", emailAccount);
+        queryWrapper.eq("email", emailAccount);
         User user = userMapper.selectOne(queryWrapper);
-        // 用户存在
-        if (user != null) {
-            if (user.getStatus().equals(UserAccountStatusEnum.BAN.getValue())) {
-                throw new BusinessException(ErrorCode.PROHIBITED, "账号已封禁");
-            }
-            UserVO userVO = new UserVO();
-            BeanUtils.copyProperties(user, userVO);
-            // 3. 记录用户的登录态
-            request.getSession().setAttribute(USER_LOGIN_STATE, userVO);
-            return userVO;
+
+        // 用户不存在
+        if (user == null) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "该邮箱未绑定账号，请先绑定账号");
         }
-        User newUser = new User();
-        newUser.setUserAccount(emailAccount);
-        newUser.setInvitationCode(generateRandomString(8));
-        String accessKey = DigestUtils.md5DigestAsHex((Arrays.toString(RandomUtil.randomBytes(10)) + SALT + VOUCHER).getBytes());
-        String secretKey = DigestUtils.md5DigestAsHex((SALT + VOUCHER + Arrays.toString(RandomUtil.randomBytes(10))).getBytes());
-        newUser.setAccessKey(accessKey);
-        newUser.setEmail(emailAccount);
-        newUser.setSecretKey(secretKey);
-        boolean saveResult = this.save(newUser);
-        if (!saveResult) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR);
+
+        if (user.getStatus().equals(UserAccountStatusEnum.BAN.getValue())) {
+            throw new BusinessException(ErrorCode.PROHIBITED, "账号已封禁");
         }
         UserVO userVO = new UserVO();
-        BeanUtils.copyProperties(newUser, userVO);
-        // 记录用户的登录态
+        BeanUtils.copyProperties(user, userVO);
+        // 3. 记录用户的登录态
         request.getSession().setAttribute(USER_LOGIN_STATE, userVO);
         return userVO;
     }
@@ -363,6 +346,44 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "邮箱绑定失败,请稍后再试！");
         }
         loginUser.setEmail(emailAccount);
+        return loginUser;
+    }
+
+    @Override
+    public UserVO userUnBindEmail(UserUnBindEmailRequest userUnBindEmailRequest, HttpServletRequest request) {
+        String emailAccount = userUnBindEmailRequest.getEmailAccount();
+        String captcha = userUnBindEmailRequest.getCaptcha();
+        if (StringUtils.isAnyBlank(emailAccount, captcha)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        String emailPattern = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
+        if (!Pattern.matches(emailPattern, emailAccount)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "不合法的邮箱地址！");
+        }
+        String cacheCaptcha = redisTemplate.opsForValue().get(CAPTCHA_CACHE_KEY + emailAccount);
+        if (StringUtils.isBlank(cacheCaptcha)) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "验证码已过期,请重新获取");
+        }
+        captcha = captcha.trim();
+        if (!cacheCaptcha.equals(captcha)) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "验证码输入有误");
+        }
+        // 查询用户是否绑定该邮箱
+        UserVO loginUser = this.getLoginUser(request);
+        if (loginUser.getEmail() == null) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "该账号未绑定邮箱");
+        }
+        if (!emailAccount.equals(loginUser.getEmail())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "该账号未绑定此邮箱");
+        }
+        User user = new User();
+        user.setId(loginUser.getId());
+        user.setEmail("");
+        boolean bindEmailResult = this.updateById(user);
+        if (!bindEmailResult) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "邮箱解绑失败,请稍后再试！");
+        }
+        loginUser.setEmail(null);
         return loginUser;
     }
 

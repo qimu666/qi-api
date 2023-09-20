@@ -51,7 +51,6 @@ public class OrderServiceImpl implements OrderService {
     @Resource
     private ProductInfoServiceImpl productInfoService;
 
-
     @Resource
     private RedissonLockUtil redissonLockUtil;
 
@@ -105,6 +104,13 @@ public class OrderServiceImpl implements OrderService {
     private void checkBuyRechargeActivity(Long userId, Long productId) {
         ProductInfo productInfo = productInfoService.getById(productId);
         if (productInfo.getProductType().equals(ProductTypeStatusEnum.RECHARGE_ACTIVITY.getValue())) {
+            LambdaQueryWrapper<ProductOrder> orderLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            orderLambdaQueryWrapper.eq(ProductOrder::getUserId, userId);
+            orderLambdaQueryWrapper.eq(ProductOrder::getProductId, productId);
+            long orderCount = productOrderService.count(orderLambdaQueryWrapper);
+            if (orderCount > 0) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "该活动只能参加一次哦！");
+            }
             LambdaQueryWrapper<RechargeActivity> activityLambdaQueryWrapper = new LambdaQueryWrapper<>();
             activityLambdaQueryWrapper.eq(RechargeActivity::getUserId, userId);
             activityLambdaQueryWrapper.eq(RechargeActivity::getProductId, productId);

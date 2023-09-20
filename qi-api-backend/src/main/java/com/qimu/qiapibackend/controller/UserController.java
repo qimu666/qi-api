@@ -128,6 +128,21 @@ public class UserController {
         return ResultUtils.success(user);
     }
 
+    /**
+     * 用户取消绑定电子邮件
+     *
+     * @param request                请求
+     * @param userUnBindEmailRequest 用户取消绑定电子邮件请求
+     * @return {@link BaseResponse}<{@link UserVO}>
+     */
+    @PostMapping("/unbindEmail")
+    public BaseResponse<UserVO> userUnBindEmail(@RequestBody UserUnBindEmailRequest userUnBindEmailRequest, HttpServletRequest request) {
+        if (userUnBindEmailRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        UserVO user = userService.userUnBindEmail(userUnBindEmailRequest,request);
+        return ResultUtils.success(user);
+    }
 
     /**
      * 用户电子邮件注册
@@ -367,7 +382,7 @@ public class UserController {
         queryWrapper.like(StringUtils.isNotBlank(userName), "userName", userName)
                 .eq(StringUtils.isNotBlank(userAccount), "userAccount", userAccount)
                 .eq(StringUtils.isNotBlank(gender), "gender", gender)
-                .eq(ObjectUtils.isNotEmpty(userRole), "userRole", userRole);
+                .eq(StringUtils.isNotBlank(userRole), "userRole", userRole);
         Page<User> userPage = userService.page(new Page<>(current, pageSize), queryWrapper);
         Page<UserVO> userVoPage = new PageDTO<>(userPage.getCurrent(), userPage.getSize(), userPage.getTotal());
         List<UserVO> userVOList = userPage.getRecords().stream().map(user -> {

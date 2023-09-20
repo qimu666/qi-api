@@ -53,6 +53,14 @@ public interface ProductOrderService extends IService<ProductOrder> {
      */
     boolean updateOrderStatusByOrderNo(String outTradeNo, String orderStatus);
 
+    /**
+     * 按订单号关闭订单
+     *
+     * @param outTradeNo 外贸编号
+     * @throws Exception 例外
+     */
+    void closedOrderByOrderNo(String outTradeNo) throws Exception;
+
 
     /**
      * 通过out trade no获得产品订单
