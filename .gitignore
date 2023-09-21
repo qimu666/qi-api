@@ -25,9 +25,9 @@ Post*
 
 application-prod.yml
 ### todo 暂时不提交
-qi-api-backend/src/main/resources/application.yml
-apiclient_key.pem
-apiclient_cert.pem
+#qi-api-backend/src/main/resources/application.yml
+#apiclient_key.pem
+#apiclient_cert.pem
 
 
 ### NetBeans ###
