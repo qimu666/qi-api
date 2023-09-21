@@ -79,7 +79,7 @@ public class OrderController {
     }
 
     @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteProductOrder(long id, HttpServletRequest request) {
+    public BaseResponse<Boolean> deleteProductOrder(int id, HttpServletRequest request) {
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -103,8 +103,8 @@ public class OrderController {
      * @return {@link BaseResponse}<{@link ProductOrderVo}>
      */
     @GetMapping("/get")
-    public BaseResponse<ProductOrderVo> getProductOrderById(long id) {
-        if (id <= 0) {
+    public BaseResponse<ProductOrderVo> getProductOrderById(String id) {
+        if (StringUtils.isBlank(id)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         ProductOrder productOrder = productOrderService.getById(id);

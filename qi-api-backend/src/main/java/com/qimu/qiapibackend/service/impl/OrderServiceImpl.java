@@ -107,6 +107,9 @@ public class OrderServiceImpl implements OrderService {
             LambdaQueryWrapper<ProductOrder> orderLambdaQueryWrapper = new LambdaQueryWrapper<>();
             orderLambdaQueryWrapper.eq(ProductOrder::getUserId, userId);
             orderLambdaQueryWrapper.eq(ProductOrder::getProductId, productId);
+            orderLambdaQueryWrapper.eq(ProductOrder::getStatus, PaymentStatusEnum.NOTPAY.getValue());
+            orderLambdaQueryWrapper.or().eq(ProductOrder::getStatus, PaymentStatusEnum.SUCCESS.getValue());
+
             long orderCount = productOrderService.count(orderLambdaQueryWrapper);
             if (orderCount > 0) {
                 throw new BusinessException(ErrorCode.OPERATION_ERROR, "该活动只能参加一次哦！");
