@@ -26,7 +26,7 @@ public enum PaymentStatusEnum {
      */
     USER_PAYING("用户支付中", "USER_PAYING"),
     /**
-     * 支付成功
+     * 已关闭
      */
     CLOSED("已关闭", "CLOSED"),
 

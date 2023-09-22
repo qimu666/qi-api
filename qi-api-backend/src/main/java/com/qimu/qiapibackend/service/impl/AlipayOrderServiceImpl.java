@@ -38,10 +38,10 @@ import com.qimu.qiapibackend.service.ProductOrderService;
 import com.qimu.qiapibackend.service.RechargeActivityService;
 import com.qimu.qiapibackend.service.UserService;
 import com.qimu.qiapibackend.utils.EmailUtil;
+import com.qimu.qiapibackend.utils.RedissonLockUtil;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -54,12 +54,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Date;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static com.qimu.qiapibackend.constant.PayConstant.*;
 import static com.qimu.qiapibackend.model.enums.PayTypeStatusEnum.ALIPAY;
-import static com.qimu.qiapibackend.model.enums.PaymentStatusEnum.NOTPAY;
-import static com.qimu.qiapibackend.model.enums.PaymentStatusEnum.SUCCESS;
+import static com.qimu.qiapibackend.model.enums.PaymentStatusEnum.*;
 
 
 /**
@@ -86,7 +84,7 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
     @Resource
     private PaymentInfoService paymentInfoService;
     @Resource
-    private RedissonClient redissonClient;
+    private RedissonLockUtil redissonLockUtil;
     @Resource
     private RechargeActivityService rechargeActivityService;
 
@@ -104,6 +102,7 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
         ProductOrderVo productOrderVo = new ProductOrderVo();
         BeanUtils.copyProperties(oldOrder, productOrderVo);
         productOrderVo.setProductInfo(JSONUtil.toBean(oldOrder.getProductInfo(), ProductInfo.class));
+        productOrderVo.setTotal(oldOrder.getTotal().toString());
         return productOrderVo;
     }
 
@@ -162,6 +161,7 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
         ProductOrderVo productOrderVo = new ProductOrderVo();
         BeanUtils.copyProperties(productOrder, productOrderVo);
         productOrderVo.setProductInfo(productInfo);
+        productOrderVo.setTotal(productInfo.getTotal().toString());
         return productOrderVo;
     }
 
@@ -182,6 +182,15 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
         LambdaQueryWrapper<ProductOrder> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ProductOrder::getOrderNo, outTradeNo);
         return this.update(productOrder, lambdaQueryWrapper);
+    }
+
+    @Override
+    public void closedOrderByOrderNo(String outTradeNo) throws AlipayApiException {
+        AlipayTradeCloseModel alipayTradeCloseModel = new AlipayTradeCloseModel();
+        alipayTradeCloseModel.setOutTradeNo(outTradeNo);
+        AlipayTradeCloseRequest request = new AlipayTradeCloseRequest();
+        request.setBizModel(alipayTradeCloseModel);
+        AliPayApi.doExecute(request);
     }
 
     @Override
@@ -211,12 +220,8 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
             }
             String tradeStatus = AlipayTradeStatusEnum.findByName(alipayTradeQueryResponse.getTradeStatus()).getPaymentStatusEnum().getValue();
             // 订单没有支付就关闭订单,更新本地订单状态
-            if (tradeStatus.equals(NOTPAY.getValue())) {
-                AlipayTradeCloseModel alipayTradeCloseModel = new AlipayTradeCloseModel();
-                alipayTradeCloseModel.setOutTradeNo(orderNo);
-                AlipayTradeCloseRequest request = new AlipayTradeCloseRequest();
-                request.setBizModel(alipayTradeCloseModel);
-                AliPayApi.doExecute(request);
+            if (tradeStatus.equals(NOTPAY.getValue()) || tradeStatus.equals(CLOSED.getValue())) {
+                closedOrderByOrderNo(orderNo);
                 this.updateOrderStatusByOrderNo(orderNo, PaymentStatusEnum.CLOSED.getValue());
                 log.info("超时订单{},关闭成功", orderNo);
                 return;
@@ -278,33 +283,25 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String doPaymentNotify(String notifyData, HttpServletRequest request) {
-        // 处理业务
-        RLock rLock = redissonClient.getLock("notify:AlipayOrder:lock");
         Map<String, String> params = AliPayApi.toMap(request);
         AliPayAsyncResponse aliPayAsyncResponse = JSONUtil.toBean(JSONUtil.toJsonStr(params), AliPayAsyncResponse.class);
-        try {
-            String result = checkAlipayOrder(aliPayAsyncResponse, params);
+        String lockName = "notify:AlipayOrder:lock:" + aliPayAsyncResponse.getOutTradeNo();
+        return redissonLockUtil.redissonDistributedLocks(lockName, "【支付宝异步回调异常】:", () -> {
+            String result;
+            try {
+                result = checkAlipayOrder(aliPayAsyncResponse, params);
+            } catch (AlipayApiException e) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, e.getMessage());
+            }
             if (!"success".equals(result)) {
                 return result;
             }
-            if (rLock.tryLock(0, -1, TimeUnit.MILLISECONDS)) {
-                String doAliPayOrderBusinessResult = this.doAliPayOrderBusiness(aliPayAsyncResponse);
-                if (StringUtils.isBlank(doAliPayOrderBusinessResult)) {
-                    throw new BusinessException(ErrorCode.OPERATION_ERROR);
-                }
-                return doAliPayOrderBusinessResult;
+            String doAliPayOrderBusinessResult = this.doAliPayOrderBusiness(aliPayAsyncResponse);
+            if (StringUtils.isBlank(doAliPayOrderBusinessResult)) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR);
             }
-        } catch (Exception e) {
-            log.error("【支付宝异步回调异常】:" + e.getMessage());
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, e.getMessage());
-        } finally {
-            if (rLock.isHeldByCurrentThread()) {
-                System.out.println("unLock: " + Thread.currentThread().getId());
-                rLock.unlock();
-            }
-        }
-        log.info("【支付宝】：校验成功");
-        return "success";
+            return doAliPayOrderBusinessResult;
+        });
     }
 
     private String checkAlipayOrder(AliPayAsyncResponse response, Map<String, String> params) throws AlipayApiException {
@@ -348,6 +345,7 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
         return "success";
     }
 
+    @SneakyThrows
     protected String doAliPayOrderBusiness(AliPayAsyncResponse response) {
         String outTradeNo = response.getOutTradeNo();
         ProductOrder productOrder = this.getProductOrderByOutTradeNo(outTradeNo);
@@ -401,6 +399,7 @@ public class AlipayOrderServiceImpl extends ServiceImpl<ProductOrderMapper, Prod
         RechargeActivity rechargeActivity = new RechargeActivity();
         rechargeActivity.setUserId(productOrder.getUserId());
         rechargeActivity.setProductId(productOrder.getProductId());
+        rechargeActivity.setOrderNo(productOrder.getOrderNo());
         boolean save = rechargeActivityService.save(rechargeActivity);
         if (!save) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "保存失败");

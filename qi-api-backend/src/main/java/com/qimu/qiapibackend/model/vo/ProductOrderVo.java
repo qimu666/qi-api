@@ -48,7 +48,7 @@ public class ProductOrderVo implements Serializable {
     /**
      * 金额(分)
      */
-    private int total;
+    private String total;
     /**
      * 接口订单状态(SUCCESS：支付成功
      * REFUND：转入退款
@@ -74,4 +74,19 @@ public class ProductOrderVo implements Serializable {
      * 支付宝订单体
      */
     private String formData;
+
+    /**
+     * 创建时间
+     */
+    private Date createTime;
+
+    /**
+     * 产品描述
+     */
+    private String description;
+
+    /**
+     * 产品类型（VIP-会员 RECHARGE-充值）
+     */
+    private String productType;
 }

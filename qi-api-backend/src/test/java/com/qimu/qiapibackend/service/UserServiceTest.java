@@ -4,18 +4,24 @@ import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.alipay.api.AlipayApiException;
+import com.alipay.api.domain.AlipayTradeRefundModel;
+import com.alipay.api.response.AlipayTradeRefundResponse;
 import com.github.binarywang.wxpay.bean.request.WxPayRefundV3Request;
 import com.github.binarywang.wxpay.bean.request.WxPayUnifiedOrderV3Request;
 import com.github.binarywang.wxpay.bean.request.WxPayUnifiedOrderV3Request.Amount;
+import com.github.binarywang.wxpay.bean.result.WxPayRefundV3Result;
 import com.github.binarywang.wxpay.bean.result.enums.TradeTypeEnum;
 import com.github.binarywang.wxpay.service.WxPayService;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.ijpay.alipay.AliPayApi;
 import com.qimu.qiapibackend.common.ErrorCode;
 import com.qimu.qiapibackend.exception.BusinessException;
-import com.qimu.qiapibackend.model.entity.InterfaceInfo;
 import com.qimu.qiapibackend.model.entity.User;
-import com.qimu.qiapibackend.model.vo.UserVO;
+import com.qimu.qiapicommon.model.entity.InterfaceInfo;
+import com.qimu.qiapicommon.model.vo.UserVO;
+import com.qimu.qiapicommon.service.inner.InnerUserInterfaceInvokeService;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.ObjectUtils;
 import org.junit.jupiter.api.Assertions;
@@ -26,6 +32,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import javax.annotation.Resource;
 import java.util.Date;
 import java.util.Map;
+
 
 /**
  * 用户服务测试
@@ -61,7 +68,7 @@ class UserServiceTest {
     @Resource
     private InterfaceInfoService interfaceInfoService;
     @Resource
-    private UserInterfaceInvokeService userInterfaceInvokeService;
+    private InnerUserInterfaceInvokeService innerUserInterfaceInvokeService;
 
     @Test
     void getCaptcha() {
@@ -72,12 +79,15 @@ class UserServiceTest {
     @Test
     void invoke() {
         InterfaceInfo interfaceInfo = interfaceInfoService.getById(1697274658264342530L);
+
         User user = userService.getById(1691069533871013889L);
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO);
         // userVO.setBalance(0);
         // userVO.setStatus(UserAccountStatusEnum.BAN.getValue());
-        boolean invoke = userInterfaceInvokeService.invoke(interfaceInfo, userVO);
+        com.qimu.qiapicommon.model.entity.InterfaceInfo newInterfaceInfo = new com.qimu.qiapicommon.model.entity.InterfaceInfo();
+        BeanUtils.copyProperties(interfaceInfo, newInterfaceInfo);
+        boolean invoke = innerUserInterfaceInvokeService.invoke(newInterfaceInfo.getId(), user.getId(), interfaceInfo.getReduceScore());
         Assertions.assertTrue(invoke);
     }
 
@@ -110,31 +120,42 @@ class UserServiceTest {
     @SneakyThrows
     @Test
     void pay() {
-        WxPayUnifiedOrderV3Request request = new WxPayUnifiedOrderV3Request();
-        Amount amount = new Amount();
-        amount.setTotal(10);
-        request.setAmount(amount);
-        request.setMchid("1609724068");
-        request.setDescription("测试商品标题");
-        request.setNotifyUrl("https://qimuu.icu/");
-        request.setOutTradeNo("order_162226155111116789");
+        // WxPayUnifiedOrderV3Request request = new WxPayUnifiedOrderV3Request();
+        // Amount amount = new Amount();
+        // amount.setTotal(10);
+        // request.setAmount(amount);
+        // request.setMchid("1609724068");
+        // request.setDescription("测试商品标题");
+        // request.setNotifyUrl("https://qimuu.icu/");
+        // request.setOutTradeNo("order_162226155111116789");
 
-        String v3 = wxPayService.createOrderV3(TradeTypeEnum.NATIVE, request);
-        System.err.println(v3);
+        // String v3 = wxPayService.createOrderV3(TradeTypeEnum.NATIVE, request);
+        // System.err.println(v3);
 
         WxPayRefundV3Request wxPayRefundV3Request = new WxPayRefundV3Request();
-        wxPayRefundV3Request.setTransactionId("4200001939202308225870750928");
-        wxPayRefundV3Request.setOutTradeNo("order_1626123456789");
-        wxPayRefundV3Request.setOutRefundNo("order_1626123456789");
-        wxPayRefundV3Request.setReason("商品已售完");
+        // wxPayRefundV3Request.setTransactionId("4200001939202308225870750928");
+        wxPayRefundV3Request.setOutTradeNo("order_06318873058334672021");
+        wxPayRefundV3Request.setOutRefundNo("order_06318873058334672021");
+        wxPayRefundV3Request.setReason("重复购买");
         WxPayRefundV3Request.Amount amount1 = new WxPayRefundV3Request.Amount();
-        amount1.setRefund(10);
-        amount1.setTotal(10);
+        amount1.setRefund(1);
+        amount1.setTotal(1);
         amount1.setCurrency("CNY");
         wxPayRefundV3Request.setAmount(amount1);
-        // wxPayService.refundV3(wxPayRefundV3Request);
+        WxPayRefundV3Result wxPayRefundV3Result = wxPayService.refundV3(wxPayRefundV3Request);
+        System.err.println(wxPayRefundV3Result);
 
 
+    }
+
+    @Test
+    void refund() throws AlipayApiException {
+        AlipayTradeRefundModel model = new AlipayTradeRefundModel();
+        model.setOutTradeNo("order_44952882910123906867");
+        model.setRefundAmount("0.01");
+        model.setRefundReason("重复购买");
+        AlipayTradeRefundResponse alipayTradeRefundResponse = AliPayApi.tradeRefundToResponse(model);
+        System.err.println(alipayTradeRefundResponse);
     }
 
     @Test

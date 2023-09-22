@@ -18,32 +18,27 @@ import java.util.Date;
 @TableName(value = "product_order")
 @Data
 public class ProductOrder implements Serializable {
+    @TableField(exist = false)
+    private static final long serialVersionUID = 1L;
     /**
      * id
      */
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
-
-    @TableField(exist = false)
-    private static final long serialVersionUID = 1L;
-    /**
-     * 商品信息
-     */
-    private String productInfo;
-
-    /**
-     * 二维码地址
-     */
-    private String codeUrl;
-
-    /**
-     * 创建人
-     */
-    private Long userId;
     /**
      * 微信订单号/支付宝订单id
      */
     private String orderNo;
+
+    /**
+     * 支付方式（默认 WX- 微信 ZFB- 支付宝）
+     */
+    private String payType;
+
+    /**
+     * 过期时间
+     */
+    private Date expirationTime;
 
     /**
      * 商品名称
@@ -51,9 +46,29 @@ public class ProductOrder implements Serializable {
     private String orderName;
 
     /**
+     * 二维码地址
+     */
+    private String codeUrl;
+
+    /**
+     * 商品信息
+     */
+    private String productInfo;
+
+    /**
      * 金额(分)
      */
     private Integer total;
+
+    /**
+     * 商品id
+     */
+    private Long productId;
+
+    /**
+     * 创建人
+     */
+    private Long userId;
 
     /**
      * 接口订单状态(SUCCESS：支付成功
@@ -67,16 +82,6 @@ public class ProductOrder implements Serializable {
     private String status;
 
     /**
-     * 支付方式（默认 WX- 微信 ZFB- 支付宝）
-     */
-    private String payType;
-
-    /**
-     * 过期时间
-     */
-    private Date expirationTime;
-
-    /**
      * 创建时间
      */
     private Date createTime;
@@ -85,10 +90,7 @@ public class ProductOrder implements Serializable {
      * 更新时间
      */
     private Date updateTime;
-    /**
-     * 商品id
-     */
-    private Long productId;
+
     /**
      * 增加积分个数
      */

@@ -2,23 +2,25 @@ package com.qimu.qiapibackend.controller;
 
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import com.qimu.qiapibackend.annotation.AuthCheck;
 import com.qimu.qiapibackend.common.*;
 import com.qimu.qiapibackend.constant.CommonConstant;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.model.dto.interfaceinfo.*;
-import com.qimu.qiapibackend.model.entity.InterfaceInfo;
 import com.qimu.qiapibackend.model.enums.InterfaceStatusEnum;
 import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.InterfaceInfoService;
-import com.qimu.qiapibackend.service.UserInterfaceInvokeService;
 import com.qimu.qiapibackend.service.UserService;
+import com.qimu.qiapicommon.model.entity.InterfaceInfo;
 import icu.qimuu.qiapisdk.client.QiApiClient;
-import icu.qimuu.qiapisdk.model.QiApiRequest;
-import icu.qimuu.qiapisdk.model.User;
+import icu.qimuu.qiapisdk.model.request.CurrencyRequest;
+import icu.qimuu.qiapisdk.model.response.ResultResponse;
+import icu.qimuu.qiapisdk.service.ApiService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -29,6 +31,8 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.qimu.qiapibackend.constant.UserConstant.ADMIN_ROLE;
 
@@ -46,9 +50,7 @@ public class InterfaceInfoController {
     @Resource
     private UserService userService;
     @Resource
-    private QiApiClient qiApiClient;
-    @Resource
-    private UserInterfaceInvokeService userInterfaceInvokeService;
+    private ApiService apiService;
 
     private final Gson gson = new Gson();
     // region 增删改查
@@ -67,8 +69,16 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         InterfaceInfo interfaceInfo = new InterfaceInfo();
-        String requestParams = JSONUtil.toJsonStr(interfaceInfoAddRequest.getRequestParams());
-        interfaceInfo.setRequestParams(requestParams);
+        if (CollectionUtils.isNotEmpty(interfaceInfoAddRequest.getRequestParams())) {
+            List<RequestParamsField> requestParamsFields = interfaceInfoAddRequest.getRequestParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
+            String requestParams = JSONUtil.toJsonStr(requestParamsFields);
+            interfaceInfo.setRequestParams(requestParams);
+        }
+        if (CollectionUtils.isNotEmpty(interfaceInfoAddRequest.getResponseParams())) {
+            List<ResponseParamsField> responseParamsFields = interfaceInfoAddRequest.getResponseParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
+            String responseParams = JSONUtil.toJsonStr(responseParamsFields);
+            interfaceInfo.setResponseParams(responseParams);
+        }
         BeanUtils.copyProperties(interfaceInfoAddRequest, interfaceInfo);
         // 校验
         interfaceInfoService.validInterfaceInfo(interfaceInfo, true);
@@ -111,8 +121,30 @@ public class InterfaceInfoController {
     }
 
     /**
+     * 更新界面信息化身url
+     * 更新接口头像url
+     *
+     * @param request                          请求
+     * @param interfaceInfoUpdateAvatarRequest 界面信息更新头像请求
+     * @return {@link BaseResponse}<{@link Boolean}>
+     */
+    @PostMapping("/updateInterfaceInfoAvatar")
+    @Transactional(rollbackFor = Exception.class)
+    public BaseResponse<Boolean> updateInterfaceInfoAvatarUrl(@RequestBody InterfaceInfoUpdateAvatarRequest interfaceInfoUpdateAvatarRequest,
+                                                              HttpServletRequest request) {
+        if (ObjectUtils.anyNull(interfaceInfoUpdateAvatarRequest, interfaceInfoUpdateAvatarRequest.getId()) || interfaceInfoUpdateAvatarRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        if (StringUtils.isBlank(interfaceInfoUpdateAvatarRequest.getAvatarUrl())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        InterfaceInfo interfaceInfo = new InterfaceInfo();
+        BeanUtils.copyProperties(interfaceInfoUpdateAvatarRequest, interfaceInfo);
+        return ResultUtils.success(interfaceInfoService.updateById(interfaceInfo));
+    }
+
+    /**
      * 更新接口信息
-     * 更新
      *
      * @param interfaceInfoUpdateRequest 接口信息更新请求
      * @param request                    请求
@@ -126,8 +158,16 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         InterfaceInfo interfaceInfo = new InterfaceInfo();
-        String requestParams = JSONUtil.toJsonStr(interfaceInfoUpdateRequest.getRequestParams());
-        interfaceInfo.setRequestParams(requestParams);
+        if (CollectionUtils.isNotEmpty(interfaceInfoUpdateRequest.getRequestParams())) {
+            List<RequestParamsField> requestParamsFields = interfaceInfoUpdateRequest.getRequestParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
+            String requestParams = JSONUtil.toJsonStr(requestParamsFields);
+            interfaceInfo.setRequestParams(requestParams);
+        }
+        if (CollectionUtils.isNotEmpty(interfaceInfoUpdateRequest.getResponseParams())) {
+            List<ResponseParamsField> responseParamsFields = interfaceInfoUpdateRequest.getResponseParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
+            String responseParams = JSONUtil.toJsonStr(responseParamsFields);
+            interfaceInfo.setResponseParams(responseParams);
+        }
         BeanUtils.copyProperties(interfaceInfoUpdateRequest, interfaceInfo);
         // 参数校验
         interfaceInfoService.validInterfaceInfo(interfaceInfo, false);
@@ -207,7 +247,7 @@ public class InterfaceInfoController {
         String description = interfaceInfoQueryRequest.getDescription();
         Integer status = interfaceInfoQueryRequest.getStatus();
         Integer reduceScore = interfaceInfoQueryRequest.getReduceScore();
-
+        String returnFormat = interfaceInfoQueryRequest.getReturnFormat();
         // 限制爬虫
         if (size > 50) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -216,6 +256,7 @@ public class InterfaceInfoController {
         queryWrapper.like(StringUtils.isNotBlank(name), "name", name)
                 .like(StringUtils.isNotBlank(description), "description", description)
                 .like(StringUtils.isNotBlank(url), "url", url)
+                .like(StringUtils.isNotBlank(returnFormat), "returnFormat", returnFormat)
                 .eq(StringUtils.isNotBlank(method), "method", method)
                 .eq(ObjectUtils.isNotEmpty(status), "status", status)
                 .eq(ObjectUtils.isNotEmpty(reduceScore), "reduceScore", reduceScore);
@@ -262,7 +303,7 @@ public class InterfaceInfoController {
      */
     @AuthCheck(mustRole = ADMIN_ROLE)
     @PostMapping("/online")
-    public BaseResponse<Boolean> onlineInterfaceInfo(@RequestBody IdRequest idRequest) {
+    public BaseResponse<Boolean> onlineInterfaceInfo(@RequestBody IdRequest idRequest, HttpServletRequest request) {
         if (ObjectUtils.anyNull(idRequest, idRequest.getId()) || idRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -270,14 +311,6 @@ public class InterfaceInfoController {
         InterfaceInfo interfaceInfo = interfaceInfoService.getById(id);
         if (interfaceInfo == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
-        }
-
-        QiApiRequest qiApiRequest = new QiApiRequest();
-        qiApiRequest.setName("test");
-        icu.qimuu.qiapisdk.common.BaseResponse<icu.qimuu.qiapisdk.model.User> nameByJsonPost = qiApiClient.getNameByJsonPost(qiApiRequest);
-        System.err.println(nameByJsonPost);
-        if (ObjectUtils.isEmpty(nameByJsonPost.getData()) && nameByJsonPost.getCode() != 0) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, nameByJsonPost.getMessage());
         }
         interfaceInfo.setStatus(InterfaceStatusEnum.ONLINE.getValue());
         return ResultUtils.success(interfaceInfoService.updateById(interfaceInfo));
@@ -320,6 +353,14 @@ public class InterfaceInfoController {
         if (ObjectUtils.anyNull(invokeRequest, invokeRequest.getId()) || invokeRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        Long id = invokeRequest.getId();
+        InterfaceInfo interfaceInfo = interfaceInfoService.getById(id);
+        if (interfaceInfo == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        if (interfaceInfo.getStatus() != InterfaceStatusEnum.ONLINE.getValue()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "接口未开启");
+        }
         // 构建请求参数
         List<InvokeRequest.Field> fieldList = invokeRequest.getRequestParams();
         String requestParams = "{}";
@@ -330,30 +371,19 @@ public class InterfaceInfoController {
             }
             requestParams = gson.toJson(jsonObject);
         }
-
-        Long id = invokeRequest.getId();
-        InterfaceInfo interfaceInfo = interfaceInfoService.getById(id);
-        if (interfaceInfo == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
-        }
-        if (interfaceInfo.getStatus() != InterfaceStatusEnum.ONLINE.getValue()) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "接口未开启");
-        }
+        Map<String, Object> params = new Gson().fromJson(requestParams, new TypeToken<Map<String, Object>>() {
+        }.getType());
         UserVO loginUser = userService.getLoginUser(request);
         String accessKey = loginUser.getAccessKey();
         String secretKey = loginUser.getSecretKey();
         try {
             QiApiClient qiApiClient = new QiApiClient(accessKey, secretKey);
-            QiApiRequest qiApiRequest = JSONUtil.toBean(requestParams, QiApiRequest.class);
-            icu.qimuu.qiapisdk.common.BaseResponse<User> baseResponse = qiApiClient.getNameByJsonPost(qiApiRequest);
-            if (baseResponse.getCode() != 0) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, baseResponse.getMessage());
-            }
-            boolean invoke = userInterfaceInvokeService.invoke(interfaceInfo, loginUser);
-            if (!invoke) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, baseResponse.getMessage());
-            }
-            return ResultUtils.success(qiApiClient.getNameByJsonPost(qiApiRequest));
+            CurrencyRequest currencyRequest = new CurrencyRequest();
+            currencyRequest.setMethod(interfaceInfo.getMethod());
+            currencyRequest.setPath(interfaceInfo.getUrl());
+            currencyRequest.setRequestParams(params);
+            ResultResponse response = apiService.request(qiApiClient, currencyRequest);
+            return ResultUtils.success(response.getData());
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, e.getMessage());
         }

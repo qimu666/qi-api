@@ -2,10 +2,7 @@ package com.qimu.qiapibackend.service;
 
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.qimu.qiapibackend.model.dto.user.UserBindEmailRequest;
-import com.qimu.qiapibackend.model.dto.user.UserEmailLoginRequest;
-import com.qimu.qiapibackend.model.dto.user.UserEmailRegisterRequest;
-import com.qimu.qiapibackend.model.dto.user.UserRegisterRequest;
+import com.qimu.qiapibackend.model.dto.user.*;
 import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.vo.UserVO;
 
@@ -124,4 +121,13 @@ public interface UserService extends IService<User> {
      * @return {@link UserVO}
      */
     UserVO userBindEmail(UserBindEmailRequest userEmailLoginRequest, HttpServletRequest request);
+
+    /**
+     * 用户取消绑定电子邮件
+     *
+     * @param request                要求
+     * @param userUnBindEmailRequest 用户取消绑定电子邮件请求
+     * @return {@link UserVO}
+     */
+    UserVO userUnBindEmail(UserUnBindEmailRequest userUnBindEmailRequest, HttpServletRequest request);
 }

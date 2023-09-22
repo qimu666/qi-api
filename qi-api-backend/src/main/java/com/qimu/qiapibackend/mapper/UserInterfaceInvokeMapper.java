@@ -1,7 +1,8 @@
 package com.qimu.qiapibackend.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.qimu.qiapibackend.model.entity.UserInterfaceInvoke;
+import com.qimu.qiapicommon.model.entity.UserInterfaceInvoke;
+
 
 /**
  * @Author: QiMu

@@ -23,6 +23,10 @@ public class RechargeActivity implements Serializable {
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     /**
+     * 微信订单号/支付宝订单id
+     */
+    private String orderNo;
+    /**
      * 用户id
      */
     private Long userId;

@@ -2,9 +2,6 @@ package com.qimu.qiapiinterface;
 
 
 import icu.qimuu.qiapisdk.client.QiApiClient;
-import icu.qimuu.qiapisdk.common.BaseResponse;
-import icu.qimuu.qiapisdk.model.QiApiRequest;
-import icu.qimuu.qiapisdk.model.User;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,14 +23,6 @@ class QiApiInterfaceApplicationTests {
     @Resource
     private QiApiClient qiApiClient;
 
-    @Test
-    void contextLoads() {
-        // QiApiClient qiApiClient = new QiApiClient("7052a8594339a519e0ba5eb04a267a60", "d8d6df60ab209385a09ac796f1dfe3e1");
-        QiApiRequest qiApiRequest = new QiApiRequest();
-        qiApiRequest.setName("qimu");
-        BaseResponse<User> nameByJsonPost = qiApiClient.getNameByJsonPost(qiApiRequest);
-        System.out.println("nameByJsonPost = " + nameByJsonPost);
-    }
 
     @Resource
     private JavaMailSender mailSender;

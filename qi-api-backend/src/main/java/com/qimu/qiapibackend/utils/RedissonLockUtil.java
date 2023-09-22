@@ -53,6 +53,60 @@ public class RedissonLockUtil {
     /**
      * redisson分布式锁
      *
+     * @param lockName     锁名称
+     * @param supplier     供应商
+     * @param errorCode    错误代码
+     * @param errorMessage 错误消息
+     * @return {@link T}
+     */
+    public <T> T redissonDistributedLocks(String lockName, Supplier<T> supplier, String errorLogTitle, ErrorCode errorCode, String errorMessage) {
+        RLock rLock = redissonClient.getLock(lockName);
+        try {
+            if (rLock.tryLock(0, -1, TimeUnit.MILLISECONDS)) {
+                return supplier.get();
+            }
+            throw new BusinessException(errorCode.getCode(), errorMessage);
+        } catch (Exception e) {
+            log.error(errorLogTitle, e.getMessage());
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, e.getMessage());
+        } finally {
+            if (rLock.isHeldByCurrentThread()) {
+                log.error("unLock: " + Thread.currentThread().getId());
+                rLock.unlock();
+            }
+        }
+    }
+
+    /**
+     * redisson分布式锁
+     *
+     * @param lockName     锁名称
+     * @param supplier     供应商
+     * @param errorCode    错误代码
+     * @param errorMessage 错误消息
+     * @return {@link T}
+     */
+    public <T> T redissonDistributedLocks(String lockName, Supplier<T> supplier, Runnable logMessage, ErrorCode errorCode, String errorMessage) {
+        RLock rLock = redissonClient.getLock(lockName);
+        try {
+            if (rLock.tryLock(0, -1, TimeUnit.MILLISECONDS)) {
+                return supplier.get();
+            }
+            throw new BusinessException(errorCode.getCode(), errorMessage);
+        } catch (Exception e) {
+            logMessage.run();
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, e.getMessage());
+        } finally {
+            if (rLock.isHeldByCurrentThread()) {
+                log.error("unLock: " + Thread.currentThread().getId());
+                rLock.unlock();
+            }
+        }
+    }
+
+    /**
+     * redisson分布式锁
+     *
      * @param waitTime     等待时间
      * @param leaseTime    租赁时间
      * @param unit         单元
@@ -124,6 +178,18 @@ public class RedissonLockUtil {
     /**
      * redisson分布式锁
      *
+     * @param lockName  锁名称
+     * @param supplier  供应商
+     * @param errorCode 错误代码
+     * @return {@link T}
+     */
+    public <T> T redissonDistributedLocks(String lockName, Supplier<T> supplier, Runnable logMessage, ErrorCode errorCode) {
+        return redissonDistributedLocks(lockName, supplier, logMessage, errorCode, errorCode.getMessage());
+    }
+
+    /**
+     * redisson分布式锁
+     *
      * @param lockName     锁名称
      * @param supplier     供应商
      * @param errorMessage 错误消息
@@ -144,6 +210,30 @@ public class RedissonLockUtil {
         return redissonDistributedLocks(lockName, supplier, ErrorCode.OPERATION_ERROR);
     }
 
+
+    /**
+     * redisson分布式锁
+     *
+     * @param lockName 锁名称
+     * @param supplier 供应商
+     * @return {@link T}
+     */
+    public <T> T redissonDistributedLocks(String lockName, String errorLogTitle, Supplier<T> supplier) {
+        return redissonDistributedLocks(lockName, supplier, errorLogTitle, ErrorCode.OPERATION_ERROR, ErrorCode.OPERATION_ERROR.getMessage());
+    }
+
+
+    /**
+     * redisson分布式锁
+     *
+     * @param lockName 锁名称
+     * @param supplier 供应商
+     * @return {@link T}
+     */
+    public <T> T redissonDistributedLocks(String lockName, Supplier<T> supplier, Runnable logMessage) {
+        return redissonDistributedLocks(lockName, supplier, logMessage, ErrorCode.OPERATION_ERROR);
+    }
+
     /**
      * redisson分布式锁
      *
@@ -161,6 +251,60 @@ public class RedissonLockUtil {
                 throw new BusinessException(errorCode.getCode(), errorMessage);
             }
         } catch (Exception e) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, e.getMessage());
+        } finally {
+            if (rLock.isHeldByCurrentThread()) {
+                log.info("lockName:{},unLockId:{} ", lockName, Thread.currentThread().getId());
+                rLock.unlock();
+            }
+        }
+    }
+
+    /**
+     * redisson分布式锁
+     *
+     * @param lockName     锁名称
+     * @param runnable     可运行
+     * @param errorCode    错误代码
+     * @param errorMessage 错误消息
+     */
+    public void redissonDistributedLocks(String lockName, Runnable runnable, String errorLogTitle, ErrorCode errorCode, String errorMessage) {
+        RLock rLock = redissonClient.getLock(lockName);
+        try {
+            if (rLock.tryLock(0, -1, TimeUnit.MILLISECONDS)) {
+                runnable.run();
+            } else {
+                throw new BusinessException(errorCode.getCode(), errorMessage);
+            }
+        } catch (Exception e) {
+            log.error(errorLogTitle, e.getMessage());
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, e.getMessage());
+        } finally {
+            if (rLock.isHeldByCurrentThread()) {
+                log.info("lockName:{},unLockId:{} ", lockName, Thread.currentThread().getId());
+                rLock.unlock();
+            }
+        }
+    }
+
+    /**
+     * redisson分布式锁
+     *
+     * @param lockName     锁名称
+     * @param runnable     可运行
+     * @param errorCode    错误代码
+     * @param errorMessage 错误消息
+     */
+    public void redissonDistributedLocks(String lockName, Runnable runnable, Runnable logMessage, ErrorCode errorCode, String errorMessage) {
+        RLock rLock = redissonClient.getLock(lockName);
+        try {
+            if (rLock.tryLock(0, -1, TimeUnit.MILLISECONDS)) {
+                runnable.run();
+            } else {
+                throw new BusinessException(errorCode.getCode(), errorMessage);
+            }
+        } catch (Exception e) {
+            logMessage.run();
             throw new BusinessException(ErrorCode.OPERATION_ERROR, e.getMessage());
         } finally {
             if (rLock.isHeldByCurrentThread()) {
@@ -202,6 +346,25 @@ public class RedissonLockUtil {
         redissonDistributedLocks(lockName, runnable, ErrorCode.OPERATION_ERROR, ErrorCode.OPERATION_ERROR.getMessage());
     }
 
+    /**
+     * redisson分布式锁
+     *
+     * @param lockName 锁名称
+     * @param runnable 可运行
+     */
+    public void redissonDistributedLocks(String lockName, Runnable runnable, Runnable logMessage) {
+        redissonDistributedLocks(lockName, runnable, logMessage, ErrorCode.OPERATION_ERROR, ErrorCode.OPERATION_ERROR.getMessage());
+    }
+
+    /**
+     * redisson分布式锁
+     *
+     * @param lockName 锁名称
+     * @param runnable 可运行
+     */
+    public void redissonDistributedLocks(String lockName, String errorLogTitle, Runnable runnable) {
+        redissonDistributedLocks(lockName, runnable, errorLogTitle, ErrorCode.OPERATION_ERROR, ErrorCode.OPERATION_ERROR.getMessage());
+    }
 
     /**
      * redisson分布式锁 可自定义 waitTime 、leaseTime、TimeUnit

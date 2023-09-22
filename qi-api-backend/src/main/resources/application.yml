@@ -1,0 +1,87 @@
+spring:
+  profiles:
+    active: dev
+  application:
+    name: qi-api-backend
+  # DataSource Config
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/qi_api
+    username: root
+    password: 1234
+  mvc:
+    path match:
+      matching-strategy: ANT_PATH_MATCHER
+  # session 失效时间（分钟）
+  session:
+    timeout: 86400
+    store-type: redis
+  # redis 配置
+  redis:
+    port: 6379
+    host: localhost
+    database: 0
+#  邮箱配置
+  mail:
+    host: smtp.qq.com
+    username: 2483482026@qq.com
+    password: xxxxxxxxxxxxxxxx
+    emailFrom: 2483482026@qq.com
+    properties:
+      mail:
+        smtp:
+          ssl:
+            enable: true
+server:
+  port: 7529
+  address: 0.0.0.0
+  servlet:
+    context-path: /api
+    session:
+      cookie:
+        # 一周
+        max-age: 604800
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: false
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      logic-delete-field: isDelete # 全局逻辑删除的实体字段名(since 3.3.0,配置后可以忽略不配置步骤2)
+      logic-delete-value: 1 # 逻辑已删除值(默认为 1)
+      logic-not-delete-value: 0 # 逻辑未删除值(默认为 0)
+
+# 腾讯云cos配置
+cos:
+  client:
+    accessKey: xxxxxxx
+    secretKey: xxxxxxx
+    region: xxxxxxx
+    bucket: xxxxxxx
+# 微信支付配置
+wx:
+  pay:
+    appId: wxxxxxxxxx67e8dc
+    mchId: 1x0xxxx68
+    apiV3Key: xxxxxbxxx3xxxx3xxx4
+    privateKeyPath: classpath:/pem/apiclient_key.pem
+    privateCertPath: classpath:/pem/apiclient_cert.pem
+    notifyUrl: https://beloved-massive-sheepdog.ngrok-free.app/api/order/notify/order
+# 支付宝支付配置
+alipay:
+  appId: 2xxxxxxxxxxx8
+  sellerId: 2xxxxxxxxxxxxx7
+  notifyUrl: https://beloved-massive-sheepdog.ngrok-free.app/api/order/notify/order
+  returnUrl: http://localhost:8000/account/center
+  private-key: xxxxxxxxxx
+  ali-pay-public-key: xxxxxxxxxxxxxxxx
+dubbo:
+  application:
+    enable-file-cache: false
+    name: dubbo-springboot-demo-provider
+  protocol:
+    name: dubbo
+    port: -1
+  registry:
+    id: nacos-registry
+    address: nacos://localhost:8848

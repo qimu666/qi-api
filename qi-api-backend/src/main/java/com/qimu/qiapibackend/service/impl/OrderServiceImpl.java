@@ -51,7 +51,6 @@ public class OrderServiceImpl implements OrderService {
     @Resource
     private ProductInfoServiceImpl productInfoService;
 
-
     @Resource
     private RedissonLockUtil redissonLockUtil;
 
@@ -105,6 +104,16 @@ public class OrderServiceImpl implements OrderService {
     private void checkBuyRechargeActivity(Long userId, Long productId) {
         ProductInfo productInfo = productInfoService.getById(productId);
         if (productInfo.getProductType().equals(ProductTypeStatusEnum.RECHARGE_ACTIVITY.getValue())) {
+            LambdaQueryWrapper<ProductOrder> orderLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            orderLambdaQueryWrapper.eq(ProductOrder::getUserId, userId);
+            orderLambdaQueryWrapper.eq(ProductOrder::getProductId, productId);
+            orderLambdaQueryWrapper.eq(ProductOrder::getStatus, PaymentStatusEnum.NOTPAY.getValue());
+            orderLambdaQueryWrapper.or().eq(ProductOrder::getStatus, PaymentStatusEnum.SUCCESS.getValue());
+
+            long orderCount = productOrderService.count(orderLambdaQueryWrapper);
+            if (orderCount > 0) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "该商品只能购买一次，您有订单未支付哦！");
+            }
             LambdaQueryWrapper<RechargeActivity> activityLambdaQueryWrapper = new LambdaQueryWrapper<>();
             activityLambdaQueryWrapper.eq(RechargeActivity::getUserId, userId);
             activityLambdaQueryWrapper.eq(RechargeActivity::getProductId, productId);

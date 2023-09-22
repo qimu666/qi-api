@@ -113,6 +113,7 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
         }
         ProductOrderVo productOrderVo = new ProductOrderVo();
         BeanUtils.copyProperties(oldOrder, productOrderVo);
+        productOrderVo.setTotal(oldOrder.getTotal().toString());
         productOrderVo.setProductInfo(JSONUtil.toBean(oldOrder.getProductInfo(), ProductInfo.class));
         return productOrderVo;
     }
@@ -174,6 +175,7 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
         ProductOrderVo productOrderVo = new ProductOrderVo();
         BeanUtils.copyProperties(productOrder, productOrderVo);
         productOrderVo.setProductInfo(productInfo);
+        productOrderVo.setTotal(productInfo.getTotal().toString());
         return productOrderVo;
     }
 
@@ -207,6 +209,11 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
         LambdaQueryWrapper<ProductOrder> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ProductOrder::getOrderNo, outTradeNo);
         return this.update(productOrder, lambdaQueryWrapper);
+    }
+
+    @Override
+    public void closedOrderByOrderNo(String outTradeNo) throws WxPayException {
+        wxPayService.closeOrderV3(outTradeNo);
     }
 
     /**
@@ -255,8 +262,8 @@ public class WxOrderServiceImpl extends ServiceImpl<ProductOrderMapper, ProductO
                 sendPaySuccessEmail(productOrder);
                 log.info("超时订单{},状态已更新", orderNo);
             }
-            if (tradeState.equals(NOTPAY.getValue())) {
-                wxPayService.closeOrderV3(orderNo);
+            if (tradeState.equals(NOTPAY.getValue()) || tradeState.equals(CLOSED.getValue())) {
+                closedOrderByOrderNo(orderNo);
                 this.updateOrderStatusByOrderNo(orderNo, CLOSED.getValue());
                 log.info("超时订单{},订单已关闭", orderNo);
             }
