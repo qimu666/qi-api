@@ -35,6 +35,7 @@ import reactor.core.publisher.Mono;
 
 import javax.annotation.Resource;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -141,18 +142,23 @@ public class GatewayGlobalFilter implements GlobalFilter, Ordered {
             if (interfaceInfo == null) {
                 throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "接口不存在");
             }
-            if (interfaceInfo.getStatus() != InterfaceStatusEnum.ONLINE.getValue()) {
+            if (interfaceInfo.getStatus() == InterfaceStatusEnum.AUDITING.getValue()) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "接口审核中");
+            }
+            if (interfaceInfo.getStatus() == InterfaceStatusEnum.OFFLINE.getValue()) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "接口未开启");
             }
             MultiValueMap<String, String> queryParams = request.getQueryParams();
             String requestParams = interfaceInfo.getRequestParams();
-            List<RequestParamsField> list = new Gson().fromJson(requestParams, new TypeToken<List<RequestParamsField>>() {
-            }.getType());
             // 校验请求参数
-            for (RequestParamsField requestParamsField : list) {
-                if ("是".equals(requestParamsField.getRequired())) {
-                    if (StringUtils.isBlank(queryParams.getFirst(requestParamsField.getFieldName())) || !queryParams.containsKey(requestParamsField.getFieldName())) {
-                        throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "必选项未设置");
+            if (StringUtils.isNotBlank(requestParams)) {
+                List<RequestParamsField> list = new Gson().fromJson(requestParams, new TypeToken<List<RequestParamsField>>() {
+                }.getType());
+                for (RequestParamsField requestParamsField : list) {
+                    if ("是".equals(requestParamsField.getRequired())) {
+                        if (StringUtils.isBlank(queryParams.getFirst(requestParamsField.getFieldName())) || !queryParams.containsKey(requestParamsField.getFieldName())) {
+                            throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "请求参数有误，" + requestParamsField.getFieldName() + "为必选项，详细参数请参考API文档：https://doc.qimuu.icu/");
+                        }
                     }
                 }
             }

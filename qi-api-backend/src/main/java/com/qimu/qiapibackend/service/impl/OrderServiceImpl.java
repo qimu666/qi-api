@@ -112,7 +112,7 @@ public class OrderServiceImpl implements OrderService {
 
             long orderCount = productOrderService.count(orderLambdaQueryWrapper);
             if (orderCount > 0) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, "该活动只能参加一次哦！");
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "该商品只能购买一次，您有订单未支付哦！");
             }
             LambdaQueryWrapper<RechargeActivity> activityLambdaQueryWrapper = new LambdaQueryWrapper<>();
             activityLambdaQueryWrapper.eq(RechargeActivity::getUserId, userId);

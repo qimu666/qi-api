@@ -19,13 +19,14 @@
         <knife4j-spring-boot-starter.version>3.0.3</knife4j-spring-boot-starter.version>
         <junit.version>4.13.2</junit.version>
         <EazyWeb.version>0.0.2</EazyWeb.version>
-        <qi-api-sdk.version>0.0.2</qi-api-sdk.version>
+        <qi-api-sdk.version>0.0.3</qi-api-sdk.version>
         <hutool-all.version>5.8.16</hutool-all.version>
         <redisson.version>3.17.5</redisson.version>
         <weixin-java-pay.version>4.5.0</weixin-java-pay.version>
         <best-pay-sdk.version>1.3.7</best-pay-sdk.version>
         <cos_api.version>5.6.97</cos_api.version>
         <dubbo.version>3.0.9</dubbo.version>
+        <qi-api-common.version>0.0.1</qi-api-common.version>
         <nacos-client.version>2.1.0</nacos-client.version>
     </properties>
 
@@ -41,7 +42,7 @@
             <dependency>
                 <groupId>com.qimu</groupId>
                 <artifactId>qi-api-common</artifactId>
-                <version>0.0.1</version>
+                <version>${qi-api-common.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.dubbo</groupId>

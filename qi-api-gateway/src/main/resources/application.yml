@@ -21,11 +21,9 @@ logging:
 
 dubbo:
   application:
-    name: dubbo-springboot-demo-provider
+    qosEnable: false
     enable-file-cache: false
-    qos-enable: true
-    qos-port: 33333
-    qos-accept-foreign-ip: false
+    name: dubbo-springboot-demo-provider
   protocol:
     name: dubbo
     port: -1

@@ -1,10 +1,7 @@
 package com.qimu.qiapiinterface;
 
 
-import com.qimuu.easyweb.common.BaseResponse;
 import icu.qimuu.qiapisdk.client.QiApiClient;
-
-import icu.qimuu.qiapisdk.model.User;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

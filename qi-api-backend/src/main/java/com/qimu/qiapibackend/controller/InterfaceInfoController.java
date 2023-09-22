@@ -2,6 +2,7 @@ package com.qimu.qiapibackend.controller;
 
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -18,6 +19,7 @@ import com.qimu.qiapibackend.service.UserService;
 import com.qimu.qiapicommon.model.entity.InterfaceInfo;
 import icu.qimuu.qiapisdk.client.QiApiClient;
 import icu.qimuu.qiapisdk.model.request.CurrencyRequest;
+import icu.qimuu.qiapisdk.model.response.ResultResponse;
 import icu.qimuu.qiapisdk.service.ApiService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -67,12 +69,16 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         InterfaceInfo interfaceInfo = new InterfaceInfo();
-        List<RequestParamsField> requestParamsFields = interfaceInfoAddRequest.getRequestParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
-        List<ResponseParamsField> responseParamsFields = interfaceInfoAddRequest.getResponseParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
-        String requestParams = JSONUtil.toJsonStr(requestParamsFields);
-        interfaceInfo.setRequestParams(requestParams);
-        String responseParams = JSONUtil.toJsonStr(responseParamsFields);
-        interfaceInfo.setResponseParams(responseParams);
+        if (CollectionUtils.isNotEmpty(interfaceInfoAddRequest.getRequestParams())) {
+            List<RequestParamsField> requestParamsFields = interfaceInfoAddRequest.getRequestParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
+            String requestParams = JSONUtil.toJsonStr(requestParamsFields);
+            interfaceInfo.setRequestParams(requestParams);
+        }
+        if (CollectionUtils.isNotEmpty(interfaceInfoAddRequest.getResponseParams())) {
+            List<ResponseParamsField> responseParamsFields = interfaceInfoAddRequest.getResponseParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
+            String responseParams = JSONUtil.toJsonStr(responseParamsFields);
+            interfaceInfo.setResponseParams(responseParams);
+        }
         BeanUtils.copyProperties(interfaceInfoAddRequest, interfaceInfo);
         // 校验
         interfaceInfoService.validInterfaceInfo(interfaceInfo, true);
@@ -115,8 +121,30 @@ public class InterfaceInfoController {
     }
 
     /**
+     * 更新界面信息化身url
+     * 更新接口头像url
+     *
+     * @param request                          请求
+     * @param interfaceInfoUpdateAvatarRequest 界面信息更新头像请求
+     * @return {@link BaseResponse}<{@link Boolean}>
+     */
+    @PostMapping("/updateInterfaceInfoAvatar")
+    @Transactional(rollbackFor = Exception.class)
+    public BaseResponse<Boolean> updateInterfaceInfoAvatarUrl(@RequestBody InterfaceInfoUpdateAvatarRequest interfaceInfoUpdateAvatarRequest,
+                                                              HttpServletRequest request) {
+        if (ObjectUtils.anyNull(interfaceInfoUpdateAvatarRequest, interfaceInfoUpdateAvatarRequest.getId()) || interfaceInfoUpdateAvatarRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        if (StringUtils.isBlank(interfaceInfoUpdateAvatarRequest.getAvatarUrl())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        InterfaceInfo interfaceInfo = new InterfaceInfo();
+        BeanUtils.copyProperties(interfaceInfoUpdateAvatarRequest, interfaceInfo);
+        return ResultUtils.success(interfaceInfoService.updateById(interfaceInfo));
+    }
+
+    /**
      * 更新接口信息
-     * 更新
      *
      * @param interfaceInfoUpdateRequest 接口信息更新请求
      * @param request                    请求
@@ -130,12 +158,16 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         InterfaceInfo interfaceInfo = new InterfaceInfo();
-        List<RequestParamsField> requestParamsFields = interfaceInfoUpdateRequest.getRequestParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
-        List<ResponseParamsField> responseParamsFields = interfaceInfoUpdateRequest.getResponseParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
-        String requestParams = JSONUtil.toJsonStr(requestParamsFields);
-        interfaceInfo.setRequestParams(requestParams);
-        String responseParams = JSONUtil.toJsonStr(responseParamsFields);
-        interfaceInfo.setResponseParams(responseParams);
+        if (CollectionUtils.isNotEmpty(interfaceInfoUpdateRequest.getRequestParams())) {
+            List<RequestParamsField> requestParamsFields = interfaceInfoUpdateRequest.getRequestParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
+            String requestParams = JSONUtil.toJsonStr(requestParamsFields);
+            interfaceInfo.setRequestParams(requestParams);
+        }
+        if (CollectionUtils.isNotEmpty(interfaceInfoUpdateRequest.getResponseParams())) {
+            List<ResponseParamsField> responseParamsFields = interfaceInfoUpdateRequest.getResponseParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
+            String responseParams = JSONUtil.toJsonStr(responseParamsFields);
+            interfaceInfo.setResponseParams(responseParams);
+        }
         BeanUtils.copyProperties(interfaceInfoUpdateRequest, interfaceInfo);
         // 参数校验
         interfaceInfoService.validInterfaceInfo(interfaceInfo, false);
@@ -345,13 +377,12 @@ public class InterfaceInfoController {
         String accessKey = loginUser.getAccessKey();
         String secretKey = loginUser.getSecretKey();
         try {
-            // 计时
             QiApiClient qiApiClient = new QiApiClient(accessKey, secretKey);
             CurrencyRequest currencyRequest = new CurrencyRequest();
             currencyRequest.setMethod(interfaceInfo.getMethod());
             currencyRequest.setPath(interfaceInfo.getUrl());
             currencyRequest.setRequestParams(params);
-            icu.qimuu.qiapisdk.model.response.BaseResponse response = apiService.request(qiApiClient, currencyRequest);
+            ResultResponse response = apiService.request(qiApiClient, currencyRequest);
             return ResultUtils.success(response.getData());
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, e.getMessage());

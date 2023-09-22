@@ -109,6 +109,7 @@ public class UserController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         UserVO user = userService.userEmailLogin(userEmailLoginRequest, request);
+        redisTemplate.delete(CAPTCHA_CACHE_KEY + userEmailLoginRequest.getEmailAccount());
         return ResultUtils.success(user);
     }
 
@@ -140,7 +141,8 @@ public class UserController {
         if (userUnBindEmailRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        UserVO user = userService.userUnBindEmail(userUnBindEmailRequest,request);
+        UserVO user = userService.userUnBindEmail(userUnBindEmailRequest, request);
+        redisTemplate.delete(CAPTCHA_CACHE_KEY + userUnBindEmailRequest.getEmailAccount());
         return ResultUtils.success(user);
     }
 
@@ -156,6 +158,7 @@ public class UserController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         long result = userService.userEmailRegister(userEmailRegisterRequest);
+        redisTemplate.delete(CAPTCHA_CACHE_KEY + userEmailRegisterRequest.getEmailAccount());
         return ResultUtils.success(result);
     }
 
