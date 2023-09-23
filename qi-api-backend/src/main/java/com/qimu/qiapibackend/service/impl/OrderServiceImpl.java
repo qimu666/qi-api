@@ -112,14 +112,14 @@ public class OrderServiceImpl implements OrderService {
 
             long orderCount = productOrderService.count(orderLambdaQueryWrapper);
             if (orderCount > 0) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, "该商品只能购买一次，您有订单未支付哦！");
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "该商品只能购买一次，请查看是否已经创建了该订单，或者挑选其他商品吧！");
             }
             LambdaQueryWrapper<RechargeActivity> activityLambdaQueryWrapper = new LambdaQueryWrapper<>();
             activityLambdaQueryWrapper.eq(RechargeActivity::getUserId, userId);
             activityLambdaQueryWrapper.eq(RechargeActivity::getProductId, productId);
             long count = rechargeActivityService.count(activityLambdaQueryWrapper);
             if (count > 0) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, "该活动只能参加一次哦！");
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "该商品只能购买一次，请查看是否已经创建了该订单，或者挑选其他商品吧！！");
             }
         }
     }

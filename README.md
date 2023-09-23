@@ -36,6 +36,17 @@
 
  **🏁 无论您是用户还是开发者，Qi-API 接口开放平台都致力于提供稳定、安全、高效的接口调用服务，帮助您实现更快速、便捷的开发和调用体验。**
 
+## 网站导航 🧭
+
+- [**Qi-API 后端 🏘️**](https://github.com/qimu666/qi-api)
+- [**Qi-API 前端 🏘**️](https://github.com/qimu666/qi-api-frontend)
+
+-  **[Qi-API-SDK](https://github.com/qimu666/qi-api-sdk)** 🛠
+
+-  **[Qi-API 接口开放平台 🔗](https://api.qimuu.icu/)**
+
+-  **[Qi-API-DOC 开发者文档 📖](https://doc.qimuu.icu/)**
+-  **[Qi-API-SDK-demo ✔️](https://github.com/qimu666/qi-api-sdk-demo/blob/master/src/main/java/icu/qimuu/qiapisdkdemo/controller/InvokeController.java)**
 
 
 ## 目录结构 📑
@@ -82,19 +93,6 @@ yarn build or npm run build
 ### 后端
 
 执行sql目录下ddl.sql
-
-
-
-## 网站导航 🧭
-
--  **[Qi-API-SDK](https://github.com/qimu666/qi-api-sdk)** 🛠
-
-- **[Qi-API 接口开放平台 🔗](https://api.qimuu.icu/)**
-
-- **[Qi-API-DOC 开发者文档 📖](https://doc.qimuu.icu/)**
-- **[Qi-API-SDK-demo ✔️](https://github.com/qimu666/qi-api-sdk-demo/blob/master/src/main/java/icu/qimuu/qiapisdkdemo/controller/InvokeController.java)**
-
-  
 
 ## 项目选型 🎯
 
@@ -164,7 +162,7 @@ yarn build or npm run build
 
 ### 接口广场
 
-![interfaceSquare](C:/Users/qimu/Desktop/qi-api-image/interfaceSquare.png)
+![interfaceSquare](https://img.qimuu.icu/typory/interfaceSquare.png)
 
 ### 开发者在线文档
 
