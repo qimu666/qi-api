@@ -262,6 +262,12 @@ public class InterfaceInfoController {
                 .eq(ObjectUtils.isNotEmpty(reduceScore), "reduceScore", reduceScore);
         queryWrapper.orderBy(StringUtils.isNotBlank(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
         Page<InterfaceInfo> interfaceInfoPage = interfaceInfoService.page(new Page<>(current, size), queryWrapper);
+        // 不是管理员只能查看已经上线的
+        if (!userService.isAdmin(request)) {
+            List<InterfaceInfo> interfaceInfoList = interfaceInfoPage.getRecords().stream()
+                    .filter(interfaceInfo -> interfaceInfo.getStatus().equals(InterfaceStatusEnum.ONLINE.getValue())).collect(Collectors.toList());
+            interfaceInfoPage.setRecords(interfaceInfoList);
+        }
         return ResultUtils.success(interfaceInfoPage);
     }
 
@@ -292,6 +298,12 @@ public class InterfaceInfoController {
                 .like(StringUtils.isNotBlank(searchText), "description", searchText);
         queryWrapper.orderBy(StringUtils.isNotBlank(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
         Page<InterfaceInfo> interfaceInfoPage = interfaceInfoService.page(new Page<>(current, size), queryWrapper);
+        // 不是管理员只能查看已经上线的
+        if (!userService.isAdmin(request)) {
+            List<InterfaceInfo> interfaceInfoList = interfaceInfoPage.getRecords().stream()
+                    .filter(interfaceInfo -> interfaceInfo.getStatus().equals(InterfaceStatusEnum.ONLINE.getValue())).collect(Collectors.toList());
+            interfaceInfoPage.setRecords(interfaceInfoList);
+        }
         return ResultUtils.success(interfaceInfoPage);
     }
 

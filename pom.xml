@@ -18,7 +18,7 @@
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <knife4j-spring-boot-starter.version>3.0.3</knife4j-spring-boot-starter.version>
         <junit.version>4.13.2</junit.version>
-        <EazyWeb.version>0.0.2</EazyWeb.version>
+        <EasyWeb.version>0.0.6</EasyWeb.version>
         <qi-api-sdk.version>0.0.3</qi-api-sdk.version>
         <hutool-all.version>5.8.16</hutool-all.version>
         <redisson.version>3.17.5</redisson.version>
@@ -102,8 +102,8 @@
             </dependency>
             <dependency>
                 <groupId>icu.qimuu</groupId>
-                <artifactId>EazyWeb</artifactId>
-                <version>${EazyWeb.version}</version>
+                <artifactId>EasyWeb</artifactId>
+                <version>${EasyWeb.version}</version>
             </dependency>
             <dependency>
                 <groupId>icu.qimuu</groupId>

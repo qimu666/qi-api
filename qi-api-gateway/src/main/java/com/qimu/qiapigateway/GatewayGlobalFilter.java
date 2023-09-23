@@ -35,7 +35,6 @@ import reactor.core.publisher.Mono;
 
 import javax.annotation.Resource;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -97,6 +96,7 @@ public class GatewayGlobalFilter implements GlobalFilter, Ordered {
         if (!WHITE_HOST_LIST.contains(Objects.requireNonNull(request.getRemoteAddress()).getHostString())) {
             throw new BusinessException(ErrorCode.FORBIDDEN_ERROR);
         }
+
         HttpHeaders headers = request.getHeaders();
         String body = headers.getFirst("body");
         String accessKey = headers.getFirst("accessKey");

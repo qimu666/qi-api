@@ -41,14 +41,15 @@
 ## 目录结构 📑
 
 
-| 目录                                                  | 描述               |
-| ----------------------------------------------------- | ------------------ |
-| 🏘️ [qi-api-backend](./qi-api-backend)                  | Qi-API后端服务模块 |
-| 🏘️ [qi-api-common](./qi-api-common)                    | 公共服务模块       |
-| 🕸️ [qi-api-gateway](./qi-api-gateway)                  | 网关模块           |
-| 🔗 [qi-api-interface](./qi-api-interface)              | 接口模块           |
-| 🛠 [qi-qpi-sdk](https://github.com/qimu666/qi-api-sdk) | 开发者调用sdk      |
-| 📘 [qi-api-doc](https://doc.qimuu.icu/)                | 接口在线文档       |
+| 目录                                                     | 描述               |
+|--------------------------------------------------------| ------------------ |
+| **🏘️ [qi-api-backend](./qi-api-backend)**             | Qi-API后端服务模块 |
+| **🏘️ [qi-api-common](./qi-api-common)**               | 公共服务模块       |
+| **🕸️ [qi-api-gateway](./qi-api-gateway)**             | 网关模块           |
+| **🔗 [qi-api-interface](./qi-api-interface)**          | 接口模块           |
+| **🛠 [qi-qpi-sdk](https://github.com/qimu666/qi-api-sdk)** | 开发者调用sdk      |
+| **📘 [qi-api-doc](https://doc.qimuu.icu/)**            | 接口在线文档       |
+| **✔️ [Qi-API-SDK-Demo](https://github.com/qimu666/qi-api-sdk-demo/blob/master/src/main/java/icu/qimuu/qiapisdkdemo/controller/InvokeController.java)** | sdk调用Demo |
 
 ## 项目流程 🗺️
 
@@ -91,6 +92,7 @@ yarn build or npm run build
 - **[Qi-API 接口开放平台 🔗](https://api.qimuu.icu/)**
 
 - **[Qi-API-DOC 开发者文档 📖](https://doc.qimuu.icu/)**
+- **[Qi-API-SDK-demo ✔️](https://github.com/qimu666/qi-api-sdk-demo/blob/master/src/main/java/icu/qimuu/qiapisdkdemo/controller/InvokeController.java)**
 
   
 
@@ -163,6 +165,12 @@ yarn build or npm run build
 ### 接口广场
 
 ![interfaceSquare](C:/Users/qimu/Desktop/qi-api-image/interfaceSquare.png)
+
+### 开发者在线文档
+
+![api](https://img.qimuu.icu/typory/api.png)
+
+![api2](https://img.qimuu.icu/typory/api2.png)
 
 ### 接口描述
 

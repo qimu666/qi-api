@@ -23,7 +23,7 @@
         </dependency>
         <dependency>
             <groupId>icu.qimuu</groupId>
-            <artifactId>EazyWeb</artifactId>
+            <artifactId>EasyWeb</artifactId>
         </dependency>
         <dependency>
             <groupId>icu.qimuu</groupId>
