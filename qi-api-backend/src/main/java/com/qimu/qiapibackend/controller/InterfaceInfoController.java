@@ -64,6 +64,7 @@ public class InterfaceInfoController {
      * @return {@link BaseResponse}<{@link Long}>
      */
     @PostMapping("/add")
+    @AuthCheck(mustRole = ADMIN_ROLE)
     public BaseResponse<Long> addInterfaceInfo(@RequestBody InterfaceInfoAddRequest interfaceInfoAddRequest, HttpServletRequest request) {
         if (interfaceInfoAddRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -121,7 +122,6 @@ public class InterfaceInfoController {
     }
 
     /**
-     * 更新界面信息化身url
      * 更新接口头像url
      *
      * @param request                          请求
@@ -129,13 +129,10 @@ public class InterfaceInfoController {
      * @return {@link BaseResponse}<{@link Boolean}>
      */
     @PostMapping("/updateInterfaceInfoAvatar")
-    @Transactional(rollbackFor = Exception.class)
+    @AuthCheck(mustRole = ADMIN_ROLE)
     public BaseResponse<Boolean> updateInterfaceInfoAvatarUrl(@RequestBody InterfaceInfoUpdateAvatarRequest interfaceInfoUpdateAvatarRequest,
                                                               HttpServletRequest request) {
         if (ObjectUtils.anyNull(interfaceInfoUpdateAvatarRequest, interfaceInfoUpdateAvatarRequest.getId()) || interfaceInfoUpdateAvatarRequest.getId() <= 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        if (StringUtils.isBlank(interfaceInfoUpdateAvatarRequest.getAvatarUrl())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         InterfaceInfo interfaceInfo = new InterfaceInfo();
@@ -151,6 +148,7 @@ public class InterfaceInfoController {
      * @return {@link BaseResponse}<{@link Boolean}>
      */
     @PostMapping("/update")
+    @AuthCheck(mustRole = ADMIN_ROLE)
     @Transactional(rollbackFor = Exception.class)
     public BaseResponse<Boolean> updateInterfaceInfo(@RequestBody InterfaceInfoUpdateRequest interfaceInfoUpdateRequest,
                                                      HttpServletRequest request) {

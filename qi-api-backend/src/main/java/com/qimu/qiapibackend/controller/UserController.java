@@ -298,6 +298,10 @@ public class UserController {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
 
+        if (!loginUser.getUserAccount().equals(ADMIN_ROLE) && !userUpdateRequest.getId().equals(loginUser.getId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "只有本人或管理员可以修改");
+        }
+
         User user = new User();
         BeanUtils.copyProperties(userUpdateRequest, user);
         // 参数校验
