@@ -61,6 +61,14 @@ public interface UserService extends IService<User> {
     boolean isAdmin(HttpServletRequest request);
 
     /**
+     * 是游客
+     *
+     * @param request 要求
+     * @return {@link User}
+     */
+    User isTourist(HttpServletRequest request);
+
+    /**
      * 用户注销
      *
      * @param request 请求

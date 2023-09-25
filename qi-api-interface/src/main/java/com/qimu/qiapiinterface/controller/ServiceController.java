@@ -2,10 +2,7 @@ package com.qimu.qiapiinterface.controller;
 
 import cn.hutool.json.JSONUtil;
 import icu.qimuu.qiapisdk.exception.ApiException;
-import icu.qimuu.qiapisdk.model.params.HoroscopeParams;
-import icu.qimuu.qiapisdk.model.params.IpInfoParams;
-import icu.qimuu.qiapisdk.model.params.NameParams;
-import icu.qimuu.qiapisdk.model.params.RandomWallpaperParams;
+import icu.qimuu.qiapisdk.model.params.*;
 import icu.qimuu.qiapisdk.model.request.WeatherRequest;
 import icu.qimuu.qiapisdk.model.response.NameResponse;
 import icu.qimuu.qiapisdk.model.response.RandomWallpaperResponse;
@@ -78,7 +75,7 @@ public class ServiceController {
     }
 
     @GetMapping("/weather")
-    public ResultResponse getWeatherInfo(WeatherRequest weatherRequest) {
-        return baseResponse("https://api.vvhan.com/api/weather", weatherRequest);
+    public ResultResponse getWeatherInfo(WeatherParams weatherParams) {
+        return baseResponse("https://api.vvhan.com/api/weather", weatherParams);
     }
 }

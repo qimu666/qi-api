@@ -12,6 +12,7 @@ import com.qimu.qiapibackend.common.*;
 import com.qimu.qiapibackend.constant.CommonConstant;
 import com.qimu.qiapibackend.exception.BusinessException;
 import com.qimu.qiapibackend.model.dto.interfaceinfo.*;
+import com.qimu.qiapibackend.model.entity.User;
 import com.qimu.qiapibackend.model.enums.InterfaceStatusEnum;
 import com.qimu.qiapibackend.model.vo.UserVO;
 import com.qimu.qiapibackend.service.InterfaceInfoService;
@@ -260,8 +261,9 @@ public class InterfaceInfoController {
                 .eq(ObjectUtils.isNotEmpty(reduceScore), "reduceScore", reduceScore);
         queryWrapper.orderBy(StringUtils.isNotBlank(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
         Page<InterfaceInfo> interfaceInfoPage = interfaceInfoService.page(new Page<>(current, size), queryWrapper);
+        User user = userService.isTourist(request);
         // 不是管理员只能查看已经上线的
-        if (!userService.isAdmin(request)) {
+        if (user == null || !user.getUserRole().equals(ADMIN_ROLE)) {
             List<InterfaceInfo> interfaceInfoList = interfaceInfoPage.getRecords().stream()
                     .filter(interfaceInfo -> interfaceInfo.getStatus().equals(InterfaceStatusEnum.ONLINE.getValue())).collect(Collectors.toList());
             interfaceInfoPage.setRecords(interfaceInfoList);

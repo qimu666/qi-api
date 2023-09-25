@@ -434,6 +434,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return user != null && ADMIN_ROLE.equals(user.getUserRole());
     }
 
+    @Override
+    public User isTourist(HttpServletRequest request) {
+        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        UserVO currentUser = (UserVO) userObj;
+        if (currentUser == null || currentUser.getId() == null) {
+            return null;
+        }
+        // 从数据库查询（追求性能的话可以注释，直接走缓存）
+        long userId = currentUser.getId();
+        return this.getById(userId);
+    }
+
     /**
      * 用户注销
      *
