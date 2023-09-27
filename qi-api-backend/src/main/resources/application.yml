@@ -3,7 +3,7 @@ spring:
     active: dev
   application:
     name: qi-api-backend
-  # DataSource Config
+  # DataSource Config todo 修改为自己的数据库配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/qi_api
@@ -21,7 +21,7 @@ spring:
     port: 6379
     host: localhost
     database: 0
-#  邮箱配置
+#  邮箱配置 todo 修改为自己的邮箱发送配置
   mail:
     host: smtp.qq.com
     username: 2483482026@qq.com
@@ -51,6 +51,15 @@ mybatis-plus:
       logic-delete-value: 1 # 逻辑已删除值(默认为 1)
       logic-not-delete-value: 0 # 逻辑未删除值(默认为 0)
 
+# Qi-API-SDK 配置，如需使用自己的网关host需修改
+qi:
+  api:
+    client:
+      access-key: 7052a8xxxxxx267a60
+      secret-key: d8d6df60xxxxx96f1dfe3e1
+      # 本地网关地址，可修改为自己的网关，用于本地测试，线上网关地址等
+    # host: http://localhost:8090/api
+
 # 腾讯云cos配置
 cos:
   client:
@@ -58,6 +67,7 @@ cos:
     secretKey: xxxxxxx
     region: xxxxxxx
     bucket: xxxxxxx
+
 # 微信支付配置
 wx:
   pay:
@@ -66,15 +76,19 @@ wx:
     apiV3Key: xxxxxbxxx3xxxx3xxx4
     privateKeyPath: classpath:/pem/apiclient_key.pem
     privateCertPath: classpath:/pem/apiclient_cert.pem
+# 本地测试用ngrok内网穿透，这个内网穿透地址，可以修改为自己的。上线修改为后端的接口地址即可
     notifyUrl: https://beloved-massive-sheepdog.ngrok-free.app/api/order/notify/order
+
 # 支付宝支付配置
 alipay:
   appId: 2xxxxxxxxxxx8
   sellerId: 2xxxxxxxxxxxxx7
+# 本地测试用ngrok内网穿透，这个内网穿透地址，可以修改为自己的。上线修改为后端的接口地址即可
   notifyUrl: https://beloved-massive-sheepdog.ngrok-free.app/api/order/notify/order
   returnUrl: http://localhost:8000/account/center
   private-key: xxxxxxxxxx
   ali-pay-public-key: xxxxxxxxxxxxxxxx
+
 dubbo:
   application:
     enable-file-cache: false
@@ -84,4 +98,5 @@ dubbo:
     port: -1
   registry:
     id: nacos-registry
+# todo 线上修改为服务器内网地址，参考nacos启动后的链接
     address: nacos://localhost:8848
