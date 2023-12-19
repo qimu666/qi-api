@@ -15,6 +15,7 @@ import com.qimu.qiapigateway.utils.RedissonLockUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.bouncycastle.util.Strings;
 import org.reactivestreams.Publisher;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -35,11 +36,12 @@ import reactor.core.publisher.Mono;
 
 import javax.annotation.Resource;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.qimu.qiapicommon.model.emums.UserAccountStatusEnum.BAN;
+import static com.qimu.qiapigateway.CacheBodyGatewayFilter.CACHE_REQUEST_BODY_OBJECT_KEY;
+import static com.qimu.qiapigateway.utils.NetUtils.getIp;
 import static icu.qimuu.qiapisdk.utils.SignUtils.getSign;
 
 
@@ -55,7 +57,7 @@ public class GatewayGlobalFilter implements GlobalFilter, Ordered {
     /**
      * 请求白名单
      */
-    private final static List<String> WHITE_HOST_LIST = Collections.singletonList("127.0.0.1");
+    private final static List<String> WHITE_HOST_LIST = Arrays.asList("127.0.0.1", "101.43.61.87");
     /**
      * 五分钟过期时间
      */
@@ -74,11 +76,11 @@ public class GatewayGlobalFilter implements GlobalFilter, Ordered {
         // 日志
         ServerHttpRequest request = exchange.getRequest();
         log.info("请求唯一id：" + request.getId());
-        log.info("请求参数：" + request.getQueryParams());
         log.info("请求方法：" + request.getMethod());
         log.info("请求路径：" + request.getPath());
         log.info("网关本地地址：" + request.getLocalAddress());
         log.info("请求远程地址：" + request.getRemoteAddress());
+        log.info("接口请求IP：" + getIp(request));
         log.info("url:" + request.getURI());
         return verifyParameters(exchange, chain);
     }
@@ -93,9 +95,9 @@ public class GatewayGlobalFilter implements GlobalFilter, Ordered {
     private Mono<Void> verifyParameters(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         // 请求白名单
-        if (!WHITE_HOST_LIST.contains(Objects.requireNonNull(request.getRemoteAddress()).getHostString())) {
-            throw new BusinessException(ErrorCode.FORBIDDEN_ERROR);
-        }
+        // if (!WHITE_HOST_LIST.contains(getIp(request))) {
+        //     throw new BusinessException(ErrorCode.FORBIDDEN_ERROR);
+        // }
 
         HttpHeaders headers = request.getHeaders();
         String body = headers.getFirst("body");
@@ -150,14 +152,32 @@ public class GatewayGlobalFilter implements GlobalFilter, Ordered {
             }
             MultiValueMap<String, String> queryParams = request.getQueryParams();
             String requestParams = interfaceInfo.getRequestParams();
-            // 校验请求参数
-            if (StringUtils.isNotBlank(requestParams)) {
-                List<RequestParamsField> list = new Gson().fromJson(requestParams, new TypeToken<List<RequestParamsField>>() {
+            List<RequestParamsField> list = new Gson().fromJson(requestParams, new TypeToken<List<RequestParamsField>>() {
+            }.getType());
+            if ("POST".equals(method)) {
+                Object cacheBody = exchange.getAttribute(CACHE_REQUEST_BODY_OBJECT_KEY);
+                String requestBody = getPostRequestBody((Flux<DataBuffer>) cacheBody);
+                log.info("POST请求参数：" + requestBody);
+                Map<String, Object> requestBodyMap = new Gson().fromJson(requestBody, new TypeToken<HashMap<String, Object>>() {
                 }.getType());
-                for (RequestParamsField requestParamsField : list) {
-                    if ("是".equals(requestParamsField.getRequired())) {
-                        if (StringUtils.isBlank(queryParams.getFirst(requestParamsField.getFieldName())) || !queryParams.containsKey(requestParamsField.getFieldName())) {
-                            throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "请求参数有误，" + requestParamsField.getFieldName() + "为必选项，详细参数请参考API文档：https://doc.qimuu.icu/");
+                if (StringUtils.isNotBlank(requestParams)) {
+                    for (RequestParamsField requestParamsField : list) {
+                        if ("是".equals(requestParamsField.getRequired())) {
+                            if (StringUtils.isBlank((CharSequence) requestBodyMap.get(requestParamsField.getFieldName())) || !requestBodyMap.containsKey(requestParamsField.getFieldName())) {
+                                throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "请求参数有误，" + requestParamsField.getFieldName() + "为必选项，详细参数请参考API文档：https://doc.qimuu.icu/");
+                            }
+                        }
+                    }
+                }
+            } else if ("GET".equals(method)) {
+                log.info("GET请求参数：" + request.getQueryParams());
+                // 校验请求参数
+                if (StringUtils.isNotBlank(requestParams)) {
+                    for (RequestParamsField requestParamsField : list) {
+                        if ("是".equals(requestParamsField.getRequired())) {
+                            if (StringUtils.isBlank(queryParams.getFirst(requestParamsField.getFieldName())) || !queryParams.containsKey(requestParamsField.getFieldName())) {
+                                throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "请求参数有误，" + requestParamsField.getFieldName() + "为必选项，详细参数请参考API文档：https://doc.qimuu.icu/");
+                            }
                         }
                     }
                 }
@@ -166,6 +186,23 @@ public class GatewayGlobalFilter implements GlobalFilter, Ordered {
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, e.getMessage());
         }
+    }
+
+    /**
+     * 获取post请求正文
+     *
+     * @param body 身体
+     * @return {@link String}
+     */
+    private String getPostRequestBody(Flux<DataBuffer> body) {
+        AtomicReference<String> getBody = new AtomicReference<>();
+        body.subscribe(buffer -> {
+            byte[] bytes = new byte[buffer.readableByteCount()];
+            buffer.read(bytes);
+            DataBufferUtils.release(buffer);
+            getBody.set(Strings.fromUTF8ByteArray(bytes));
+        });
+        return getBody.get();
     }
 
     /**
@@ -224,6 +261,6 @@ public class GatewayGlobalFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -1;
+        return Ordered.HIGHEST_PRECEDENCE + 100;
     }
 }
