@@ -79,8 +79,8 @@ public class OrderController {
     }
 
     @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteProductOrder(int id, HttpServletRequest request) {
-        if (id <= 0) {
+    public BaseResponse<Boolean> deleteProductOrder(String id, HttpServletRequest request) {
+        if (StringUtils.isBlank(id)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         UserVO loginUser = userService.getLoginUser(request);
