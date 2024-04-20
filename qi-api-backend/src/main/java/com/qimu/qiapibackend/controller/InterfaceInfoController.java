@@ -161,11 +161,15 @@ public class InterfaceInfoController {
             List<RequestParamsField> requestParamsFields = interfaceInfoUpdateRequest.getRequestParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
             String requestParams = JSONUtil.toJsonStr(requestParamsFields);
             interfaceInfo.setRequestParams(requestParams);
+        }else {
+            interfaceInfo.setRequestParams("[]");
         }
         if (CollectionUtils.isNotEmpty(interfaceInfoUpdateRequest.getResponseParams())) {
             List<ResponseParamsField> responseParamsFields = interfaceInfoUpdateRequest.getResponseParams().stream().filter(field -> StringUtils.isNotBlank(field.getFieldName())).collect(Collectors.toList());
             String responseParams = JSONUtil.toJsonStr(responseParamsFields);
             interfaceInfo.setResponseParams(responseParams);
+        }else {
+            interfaceInfo.setResponseParams("[]");
         }
         BeanUtils.copyProperties(interfaceInfoUpdateRequest, interfaceInfo);
         // 参数校验
@@ -222,7 +226,6 @@ public class InterfaceInfoController {
 
     /**
      * 分页获取列表
-     *
      * @param interfaceInfoQueryRequest 接口信息查询请求
      * @param request                   请求
      * @return {@link BaseResponse}<{@link Page}<{@link InterfaceInfo}>>
@@ -252,8 +255,11 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         QueryWrapper<InterfaceInfo> queryWrapper = new QueryWrapper<>();
-        queryWrapper.like(StringUtils.isNotBlank(name), "name", name)
-                .like(StringUtils.isNotBlank(description), "description", description)
+        if (StringUtils.isNotBlank(name) && StringUtils.isNotBlank(description)) {
+            queryWrapper.and(qw -> qw.like("name", name).or()
+                    .like("description", description));
+        }
+        queryWrapper
                 .like(StringUtils.isNotBlank(url), "url", url)
                 .like(StringUtils.isNotBlank(returnFormat), "returnFormat", returnFormat)
                 .eq(StringUtils.isNotBlank(method), "method", method)
@@ -293,9 +299,11 @@ public class InterfaceInfoController {
         String sortOrder = interfaceInfoQueryRequest.getSortOrder();
 
         QueryWrapper<InterfaceInfo> queryWrapper = new QueryWrapper<>();
-        queryWrapper.like(StringUtils.isNotBlank(searchText), "name", searchText)
-                .or()
-                .like(StringUtils.isNotBlank(searchText), "description", searchText);
+        if (StringUtils.isNotBlank(searchText)) {
+            queryWrapper.and(qw -> qw.like(StringUtils.isNotBlank(searchText), "name", searchText)
+                    .or()
+                    .like(StringUtils.isNotBlank(searchText), "description", searchText));
+        }
         queryWrapper.orderBy(StringUtils.isNotBlank(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
         Page<InterfaceInfo> interfaceInfoPage = interfaceInfoService.page(new Page<>(current, size), queryWrapper);
         // 不是管理员只能查看已经上线的

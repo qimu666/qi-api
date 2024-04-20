@@ -32,6 +32,9 @@ public class InnerUserServiceImpl implements InnerUserService {
         LambdaQueryWrapper<User> userLambdaQueryWrapper = new LambdaQueryWrapper<>();
         userLambdaQueryWrapper.eq(User::getAccessKey, accessKey);
         User user = userService.getOne(userLambdaQueryWrapper);
+        if (user == null) {
+            return null;
+        }
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO);
         return userVO;

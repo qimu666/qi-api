@@ -55,12 +55,8 @@ mybatis-plus:
 qi:
   api:
     client:
-      access-key: 7052a8xxxxxx267a60
-      secret-key: d8d6df60xxxxx96f1dfe3e1
-      # 本地网关地址，可修改为自己的网关，用于本地测试，线上网关地址等
-    # host: http://localhost:8090/api
-
-# 腾讯云cos配置
+      # 本地测试网关地址
+      host: http://localhost:8090/api
 cos:
   client:
     accessKey: xxxxxxx

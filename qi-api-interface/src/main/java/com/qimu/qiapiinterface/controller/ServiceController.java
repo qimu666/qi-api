@@ -7,10 +7,9 @@ import icu.qimuu.qiapisdk.model.request.WeatherRequest;
 import icu.qimuu.qiapisdk.model.response.NameResponse;
 import icu.qimuu.qiapisdk.model.response.RandomWallpaperResponse;
 import icu.qimuu.qiapisdk.model.response.ResultResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -28,6 +27,7 @@ import static com.qimu.qiapiinterface.utils.ResponseUtils.responseToMap;
  */
 @RestController
 @RequestMapping("/")
+@Slf4j
 public class ServiceController {
     @GetMapping("/name")
     public NameResponse getName(NameParams nameParams) {
@@ -46,6 +46,17 @@ public class ServiceController {
 
     @GetMapping("/randomWallpaper")
     public RandomWallpaperResponse randomWallpaper(RandomWallpaperParams randomWallpaperParams) throws ApiException {
+        String baseUrl = "https://api.btstu.cn/sjbz/api.php";
+        String url = buildUrl(baseUrl, randomWallpaperParams);
+        if (StringUtils.isAllBlank(randomWallpaperParams.getLx(), randomWallpaperParams.getMethod())) {
+            url = url + "?format=json";
+        } else {
+            url = url + "&format=json";
+        }
+        return JSONUtil.toBean(get(url), RandomWallpaperResponse.class);
+    }
+    @PostMapping("/randomWallpaper")
+    public RandomWallpaperResponse postAndomWallpaper(@RequestBody RandomWallpaperParams randomWallpaperParams) throws ApiException {
         String baseUrl = "https://api.btstu.cn/sjbz/api.php";
         String url = buildUrl(baseUrl, randomWallpaperParams);
         if (StringUtils.isAllBlank(randomWallpaperParams.getLx(), randomWallpaperParams.getMethod())) {

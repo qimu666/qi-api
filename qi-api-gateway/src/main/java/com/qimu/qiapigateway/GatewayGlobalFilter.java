@@ -117,7 +117,7 @@ public class GatewayGlobalFilter implements GlobalFilter, Ordered {
         try {
             UserVO user = innerUserService.getInvokeUserByAccessKey(accessKey);
             if (user == null) {
-                throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "账号不存在");
+                throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "请正确配置接口凭证");
             }
             // 校验accessKey
             if (!user.getAccessKey().equals(accessKey)) {
