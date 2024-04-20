@@ -34,7 +34,7 @@ import java.util.Arrays;
 @RequestMapping("/file")
 @Slf4j
 public class FileController {
-    final long ONE_M = 1024 * 1024L;
+    final long ONE_M =2* 1024 * 1024L;
     @Resource
     private UserService userService;
     @Resource
@@ -116,7 +116,7 @@ public class FileController {
             if (fileSize > ONE_M) {
                 return "文件大小不能超过 1M";
             }
-            if (!Arrays.asList("jpeg", "jpg", "svg", "png", "webp","jiff").contains(fileSuffix)) {
+            if (!Arrays.asList("jpeg", "jpg", "svg", "png", "webp","jfif").contains(fileSuffix)) {
                 return "文件类型错误";
             }
         }

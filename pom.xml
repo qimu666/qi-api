@@ -19,7 +19,7 @@
         <knife4j-spring-boot-starter.version>3.0.3</knife4j-spring-boot-starter.version>
         <junit.version>4.13.2</junit.version>
         <EasyWeb.version>0.0.5</EasyWeb.version>
-        <qi-api-sdk.version>0.0.3</qi-api-sdk.version>
+        <qi-api-sdk.version>0.0.4</qi-api-sdk.version>
         <hutool-all.version>5.8.16</hutool-all.version>
         <redisson.version>3.17.5</redisson.version>
         <weixin-java-pay.version>4.5.0</weixin-java-pay.version>
