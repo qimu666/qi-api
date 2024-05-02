@@ -43,5 +43,8 @@ public class WxPayAccountConfig {
      * 通知地址
      */
     private String notifyUrl;
-
+    /**
+     * 是否使用微信沙箱
+     */
+    private boolean sandbox;
 }
