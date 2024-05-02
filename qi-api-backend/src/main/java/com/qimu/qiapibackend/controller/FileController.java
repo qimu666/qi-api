@@ -4,7 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import com.qimu.qiapibackend.common.BaseResponse;
 import com.qimu.qiapibackend.common.ErrorCode;
 import com.qimu.qiapibackend.common.ResultUtils;
-import com.qimu.qiapibackend.constant.FileConstant;
+import com.qimu.qiapibackend.config.CosClientConfig;
 import com.qimu.qiapibackend.manager.CosManager;
 import com.qimu.qiapibackend.model.enums.FileUploadBizEnum;
 import com.qimu.qiapibackend.model.enums.ImageStatusEnum;
@@ -34,12 +34,13 @@ import java.util.Arrays;
 @RequestMapping("/file")
 @Slf4j
 public class FileController {
-    final long ONE_M =2* 1024 * 1024L;
+    private static final long ONE_M = 2 * 1024 * 1024L;
     @Resource
     private UserService userService;
     @Resource
     private CosManager cosManager;
-
+    @Resource
+    private CosClientConfig cosClientConfig;
 
     /**
      * 上传文件
@@ -76,7 +77,7 @@ public class FileController {
             imageVo.setName(multipartFile.getOriginalFilename());
             imageVo.setUid(RandomStringUtils.randomAlphanumeric(8));
             imageVo.setStatus(ImageStatusEnum.SUCCESS.getValue());
-            imageVo.setUrl(FileConstant.COS_HOST + filepath);
+            imageVo.setUrl(cosClientConfig.getCosHost() + filepath);
             // 返回可访问地址
             return ResultUtils.success(imageVo);
         } catch (Exception e) {
@@ -116,7 +117,7 @@ public class FileController {
             if (fileSize > ONE_M) {
                 return "文件大小不能超过 1M";
             }
-            if (!Arrays.asList("jpeg", "jpg", "svg", "png", "webp","jfif").contains(fileSuffix)) {
+            if (!Arrays.asList("jpeg", "jpg", "svg", "png", "webp", "jfif").contains(fileSuffix)) {
                 return "文件类型错误";
             }
         }

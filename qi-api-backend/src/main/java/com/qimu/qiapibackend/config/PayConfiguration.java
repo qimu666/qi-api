@@ -39,7 +39,7 @@ public class PayConfiguration {
         payConfig.setNotifyUrl(StringUtils.trimToNull(this.properties.getNotifyUrl()));
 
         // 可以指定是否使用沙箱环境
-        payConfig.setUseSandboxEnv(false);
+        payConfig.setUseSandboxEnv(this.properties.isSandbox());
         WxPayService wxPayService = new WxPayServiceImpl();
         wxPayService.setConfig(payConfig);
         return wxPayService;
@@ -52,7 +52,7 @@ public class PayConfiguration {
                 .setAliPayPublicKey(aliPayAccountConfig.getAliPayPublicKey())
                 .setCharset("UTF-8")
                 .setPrivateKey(aliPayAccountConfig.getPrivateKey())
-                .setServiceUrl("https://openapi.alipay.com/gateway.do")
+                .setServiceUrl(aliPayAccountConfig.getSandbox()?"https://openapi-sandbox.dl.alipaydev.com/gateway.do":"https://openapi.alipay.com/gateway.do")
                 .setSignType("RSA2")
                 .setCertModel(false)
                 .build(); // 普通公钥方式

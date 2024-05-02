@@ -3,7 +3,7 @@ spring:
     active: dev
   application:
     name: qi-api-backend
-  # DataSource Config todo 修改为自己的数据库配置
+  # todo 修改为自己的数据库配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/qi_api
@@ -21,11 +21,11 @@ spring:
     port: 6379
     host: localhost
     database: 0
-#  邮箱配置 todo 修改为自己的邮箱发送配置
+#  邮箱配置 todo 修改为自己的邮箱发送配置 password为邮箱授权码
   mail:
     host: smtp.qq.com
     username: 2483482026@qq.com
-    password: xxxxxxxxxxxxxxxx
+    password: 邮箱授权码
     emailFrom: 2483482026@qq.com
     properties:
       mail:
@@ -63,22 +63,27 @@ cos:
     secretKey: xxxxxxx
     region: xxxxxxx
     bucket: xxxxxxx
+    cos-host: https://xxxx.icu
 
-# 微信支付配置
+# 微信支付配置 todo
 wx:
   pay:
     appId: wxxxxxxxxx67e8dc
     mchId: 1x0xxxx68
     apiV3Key: xxxxxbxxx3xxxx3xxx4
+#  是否沙箱环境
+    sandbox: false
     privateKeyPath: classpath:/pem/apiclient_key.pem
     privateCertPath: classpath:/pem/apiclient_cert.pem
 # 本地测试用ngrok内网穿透，这个内网穿透地址，可以修改为自己的。上线修改为后端的接口地址即可
     notifyUrl: https://beloved-massive-sheepdog.ngrok-free.app/api/order/notify/order
 
-# 支付宝支付配置
+# 支付宝支付配置 todo
 alipay:
   appId: 2xxxxxxxxxxx8
   sellerId: 2xxxxxxxxxxxxx7
+#  是否沙箱环境
+  sandbox: false
 # 本地测试用ngrok内网穿透，这个内网穿透地址，可以修改为自己的。上线修改为后端的接口地址即可
   notifyUrl: https://beloved-massive-sheepdog.ngrok-free.app/api/order/notify/order
   returnUrl: http://localhost:8000/account/center
