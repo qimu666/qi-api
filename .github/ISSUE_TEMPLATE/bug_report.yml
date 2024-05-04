@@ -28,7 +28,7 @@ body:
   validations:
     required: true
 - type: textarea
-  id: Problem description
+  id: problemDescription
   attributes:
     label: 问题描述：
     description: 请描述你遇到了哪些问题?
@@ -36,7 +36,7 @@ body:
   validations:
     required: true
 - type: textarea
-  id: Reproduction steps
+  id: reproductionSteps
   attributes:
     label: 复现步骤：
     description: 请描述一下在哪些地方遇到了问题?
