@@ -46,9 +46,11 @@ body:
    attributes:
      label: 预期结果(可选)：
      description:
+     placeholder:
  - type: textarea
    id: relatedScreenshots
    attributes:
      label: 相关截图(可选)：
      description: 请详细截取遇到的错误信息图片
+     placeholder:
           
