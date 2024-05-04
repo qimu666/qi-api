@@ -38,7 +38,16 @@ body:
 - type: textarea
   id: reproductionSteps
   attributes:
-    label: 复现步骤：
+    label: 复现步骤(可选)：
     description: 请描述一下在哪些地方遇到了问题?
     placeholder: 点击更新头像后,图片没有上传。
+ - type: textarea
+  id: expectedResults
+  attributes:
+    label: 预期结果(可选)：
+ - type: textarea
+  id: expectedResults
+  attributes:
+    label: 相关截图(可选)：
+    description: 请详细截取遇到的错误信息图片
       
