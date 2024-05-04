@@ -2,6 +2,7 @@ name: Bug Report
 description: 使用简练详细的语言描述你遇到的问题.
 title: "[Bug]: "
 labels: ["bug"]
+body:
 - type: checkboxes
   id: 提问自检
   attributes:
@@ -11,3 +12,6 @@ labels: ["bug"]
       - label: 我已确认目前没有类似 issue
       - label: 我已确认我已升级到最新版本
       - label: 我已完整查看过项目 README，尤其是常见问题部分
+
+
+      
