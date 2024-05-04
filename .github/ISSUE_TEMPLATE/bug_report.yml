@@ -28,12 +28,12 @@ body:
   validations:
     required: true
 - type: textarea
-    id: whatHappened
-    attributes:
-      label: 问题描述：
-      description: 请描述你遇到了哪些问题?
-      placeholder: 我遇到了xxxx问题。
-    validations:
-      required: true
+  id: whatHappened
+  attributes:
+    label: 问题描述：
+    description: 请描述你遇到了哪些问题?
+    placeholder: 我遇到了xxxx问题。
+  validations:
+    required: true
 
       
