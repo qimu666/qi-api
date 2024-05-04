@@ -6,8 +6,8 @@ body:
 - type: checkboxes
   id: Questioning
   attributes:
-    label: 提问自检
-    description: 请先检查有没有如下情况.
+    label: 提问自检：
+    description: 请先检查有没有如下情况：
     options:
       - label: 我已确认目前没有类似 issue
       - label: 我已确认我已升级到最新版本
@@ -17,7 +17,7 @@ body:
 - type: dropdown
   id: jdkVersion
   attributes:
-    label: JDk版本
+    label: JDk版本：
     options:
       - 1 ~ 7
       - 8
@@ -27,8 +27,13 @@ body:
     default: 1
   validations:
     required: true
-- type: markdown
-  attributes:
-    value: "Thanks for completing our form!"
+- type: textarea
+    id: what-happened
+    attributes:
+      label: 问题描述：
+      description: 请描述你遇到了哪些问题?
+      placeholder: 我遇到了xxxx问题。
+    validations:
+      required: true
 
       
