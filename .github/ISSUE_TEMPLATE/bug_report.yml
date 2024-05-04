@@ -28,12 +28,17 @@ body:
   validations:
     required: true
 - type: textarea
-  id: whatHappened
+  id: Problem description
   attributes:
     label: 问题描述：
     description: 请描述你遇到了哪些问题?
     placeholder: 我遇到了xxxx问题。
   validations:
     required: true
-
+- type: textarea
+  id: Reproduction steps
+  attributes:
+    label: 复现步骤：
+    description: 请描述一下在哪些地方遇到了问题?
+    placeholder: 点击更新头像后,图片没有上传。
       
