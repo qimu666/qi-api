@@ -45,6 +45,7 @@ body:
    id: expectedResults
    attributes:
      label: 预期结果(可选)：
+     description:
  - type: textarea
    id: relatedScreenshots
    attributes:
