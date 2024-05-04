@@ -29,6 +29,6 @@ body:
     description: 请描述一下这个功能的应用场景
 - type: markdown
   attributes:
-    value: "如果您已开发好新功能,欢迎您的贡献！！[New pull request](https://github.com/qimu666/qi-api/pulls)"    
+    value: "如果您已开发好新功能,欢迎您的贡献！！<a href="https://github.com/qimu666/qi-api/pulls" style="background-color: rgb(31, 136, 61);text-decoration:none; color: #ffffff; padding: 10px 18px; border: none; border-radius: 5px; font-size: 16px;">New pull request</a>"    
 
           
