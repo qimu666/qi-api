@@ -27,6 +27,8 @@ body:
     default: 1
   validations:
     required: true
-
+- type: markdown
+  attributes:
+    value: "Thanks for completing our form!"
 
       
