@@ -22,7 +22,7 @@ body:
       - 1 ~ 7
       - 8
       - 9 ~ 16
-       - 17
+      - 17
       - 17以上
     default: 1
   validations:
