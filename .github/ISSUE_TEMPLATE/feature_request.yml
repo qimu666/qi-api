@@ -1,0 +1,34 @@
+name: Feature request
+description: 使用简练详细的语言描述希望加入的新功能.
+title: "[enhancement]: "
+labels: ["enhancement"]
+body:
+- type: checkboxes
+  id: Questioning
+  attributes:
+    label: 提问自检：
+    description: 请先检查有没有如下情况：
+    options:
+      - label: 我已确认目前没有类似 issue
+      - label: 我已确认我已升级到最新版本
+      - label: 我已完整查看过项目 README，尤其是常见问题部分
+      - label: 我理解并愿意跟进此 issue，协助测试和提供反馈
+      - label: 我理解并认可上述内容，并理解项目维护者精力有限，不遵循规则的 issue 可能会被无视或直接关闭
+- type: textarea
+  id: problemDescription
+  attributes:
+    label: 功能描述：
+    description: 请描述一下功能的详细信息?
+    placeholder: 用户可以更新头像的功能。
+  validations:
+    required: true
+- type: textarea
+  id: reproductionSteps
+  attributes:
+    label: 应用场景(可选)：
+    description: 请描述一下这个功能的应用场景
+- type: markdown
+  attributes:
+    value: "如果您已开发好新功能,欢迎您的贡献！！ <a href='https://github.com/qimu666/qi-api/pulls' style='background-color:rgb(31, 136, 61);text-decoration:none;color:#ffffff;padding: 10px 18px; border: none; border-radius: 5px; font-size: 16px;'>New pull request</a>"    
+
+          
