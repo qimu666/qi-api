@@ -4,7 +4,7 @@ title: "[Bug]: "
 labels: ["bug"]
 body:
 - type: checkboxes
-  id: Questioning self inspection
+  id: Questioning
   attributes:
     label: 提问自检
     description: 请检查有没有如下情况.
