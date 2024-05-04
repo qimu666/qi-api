@@ -28,7 +28,7 @@ body:
   validations:
     required: true
 - type: textarea
-    id: what-happened
+    id: whatHappened
     attributes:
       label: 问题描述：
       description: 请描述你遇到了哪些问题?
