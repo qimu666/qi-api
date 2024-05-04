@@ -47,7 +47,7 @@ public class CosClientConfig {
 
     @Bean
     public COSClient cosClient() {
-        if (StringUtils.isNotBlank(cosHost)) {
+        if (StringUtils.isBlank(cosHost)) {
             throw new RuntimeException("cosHost未配置");
         }
         // 初始化用户身份信息(secretId, secretKey)
