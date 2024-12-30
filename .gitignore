@@ -42,3 +42,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+.mysql-data
+.nacos-data
+.redis-data

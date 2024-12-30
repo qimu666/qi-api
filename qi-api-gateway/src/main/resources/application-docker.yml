@@ -1,0 +1,34 @@
+server:
+  port: 8090
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: qi-api-interface
+          # todo 容器编排接口服务地址，已部署接口服务修改为线上地址
+          uri: http://qi-api-interface:8081
+          predicates:
+            - Path=/api/**
+  redis:
+    port: 6379
+    host: redis
+    database: 0
+logging:
+  level:
+    org:
+      springframework:
+        cloud:
+          gateway: trace
+
+dubbo:
+  application:
+    qosEnable: false
+    enable-file-cache: false
+    name: dubbo-springboot-demo-provider
+  protocol:
+    name: dubbo
+    port: -1
+  registry:
+    id: nacos-registry
+    # todo 线上可修改为远程服务器ip地址，参考nacos启动后的链接
+    address: nacos://nacos:8848
