@@ -1,0 +1,49 @@
+version: '3'
+services:
+  qi-api-backend:
+    container_name: qi-api-backend
+    environment:
+      TZ: Asia/Shanghai
+      SERVER_PORT: 7529
+    build:
+      context: ./qi-api-backend
+      dockerfile: Dockerfile
+    # 健康检查，后端启动成功后再启动网关
+    healthcheck:
+      test: ["CMD","curl","-f","http://localhost:7529/api/user/get/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "7529:7529"
+    networks:
+      - mynetwork
+  qi-api-gateway:
+    container_name: qi-api-gateway
+    environment:
+      TZ: Asia/Shanghai
+      SERVER_PORT: 8090
+    build:
+      context: ./qi-api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"
+    depends_on:
+      qi-api-backend:
+        condition: service_healthy
+    networks:
+      - mynetwork
+  qi-api-interface:
+    container_name: qi-api-interface
+    environment:
+      TZ: Asia/Shanghai
+      SERVER_PORT: 8081
+    build:
+      context: ./qi-api-interface
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    networks:
+      - mynetwork
+networks:
+  mynetwork:

@@ -92,7 +92,28 @@ yarn build or npm run build
 
 ### 后端
 
-执行sql目录下ddl.sql
+1. docker-compose容器编排一键启动
+
+   - 修改配置文件，修改配置部分已标记todo标签。无需特殊情况只需关注两个配置文件（已配置好不修改也可以直接运行）
+
+     1. backend配置文件
+
+     ![image-20241230195952155](https://img.qimuu.icu/typory/image-20241230195952155.png)
+
+     2.gateway网关配置文件
+
+     ![image-20241230200102128](https://img.qimuu.icu/typory/image-20241230200102128.png)
+
+   -   本地maven构建jar包（跳过测试）
+
+     ![image-20241230200610985](https://img.qimuu.icu/typory/image-20241230200610985.png)
+     
+   - 启动项目
+
+     1. 运行docker-compose.env.yml文件启动mysql、redis、nacos环境依赖
+     2. 运行docker-compose.service.yml文件启动后端服务
+
+2. 普通方式：执行sql目录下ddl.sql
 
 ## 项目选型 🎯
 
@@ -151,13 +172,13 @@ yarn build or npm run build
 |                    商品管理、上线、下架                     | ❌ | ❌ |✅|
 |                    用户管理、封号解封等                     | ❌ | ❌ | ✅ |
 |                接口管理、接口发布审核、下架                 | ❌ | ❌ | ✅ |
-|                            退款                             | ❌ | ❌| ✅ |
+|                            退款                             | ❌ | ❌| ❌ |
 
 ## 功能展示 ✨
 
 ### 首页
 
-![index](https://img.qimuu.icu/typory/index.png)
+![index](https://img.qimuu.icu/typory/image-20241230233443136.png)
 
 ### 接口广场
 
@@ -227,8 +248,3 @@ yarn build or npm run build
 - **我的订单**![orderinfo](https://img.qimuu.icu/typory/orderinfo.png)
 
 - **详细订单**![orderDetails](https://img.qimuu.icu/typory/orderDetails.png)
-### 主题切换
-
-#### 深色主题![darkTheme](https://img.qimuu.icu/typory/darkTheme.png)
-
-#### 浅色主题![index](https://img.qimuu.icu/typory/index.png)

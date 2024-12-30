@@ -1,0 +1,97 @@
+spring:
+  application:
+    name: qi-api-backend
+  # todo 自行搭建数据库修改为自己的数据库配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://mysql:3306/qi_api
+    username: root
+    password: 1234
+  mvc:
+    path match:
+      matching-strategy: ANT_PATH_MATCHER
+  # session 失效时间（分钟）
+  session:
+    timeout: 86400
+    store-type: redis
+  # todo 如自行搭建修改为自己redis的配置
+  redis:
+    port: 6379
+    host: redis
+    database: 0
+  #  邮箱配置 todo 修改为自己的邮箱发送配置 password为邮箱授权码
+  mail:
+    host: smtp.qq.com
+    username: 2483482026@qq.com
+    password: xsxxxie
+    emailFrom: 2483482026@qq.com
+    properties:
+      mail:
+        smtp:
+          ssl:
+            enable: true
+server:
+  port: 7529
+  address: 0.0.0.0
+  servlet:
+    context-path: /api
+    session:
+      cookie:
+        # 一周
+        max-age: 604800
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: false
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      logic-delete-field: isDelete # 全局逻辑删除的实体字段名(since 3.3.0,配置后可以忽略不配置步骤2)
+      logic-delete-value: 1 # 逻辑已删除值(默认为 1)
+      logic-not-delete-value: 0 # 逻辑未删除值(默认为 0)
+# Qi-API-SDK 配置，自行搭建的修改为自己的网关host需修改
+qi:
+  api:
+    client:
+      # todo docker容器编排网关服务地址，如已部署在线网关，可以修改为在线网关地址，同时修改数据库接口地址前缀
+      host: http://qi-api-gateway:8090/api/api
+# 腾讯云cos文件上传配置 todo
+cos:
+  client:
+    accessKey: AKIDcxxxvTmpbE
+    secretKey: VmHZcNxxx8l8JK
+    region: ap-gxxxzhou
+    bucket: typxx950889
+    cos-host: httxxx.icu
+# 微信支付配置 todo
+wx:
+  pay:
+    appId: wx2exxx67e8dc
+    mchId: 1xxx068
+    apiV3Key: bf3xxxx9934
+    privateKeyPath: classpath:/pem/apiclient_key.pem
+    privateCertPath: classpath:/pem/apiclient_cert.pem
+    #本地测试用内网穿透，这个内网穿透地址，修改为自己的。上线修改为后端的接口地址即可
+    notifyUrl: https://beloved-massive-sheepdog.ngrok-free.app/api/order/notify/order
+# 支付宝支付配置 todo
+alipay:
+  appId: 201xxx1568
+  sellerId: 20xxx090687
+  #是否沙箱环境
+  sandbox: false
+  #本地测试用内网穿透，这个内网穿透地址，修改为自己的。上线修改为后端的接口地址即可
+  notifyUrl: https://beloved-massive-sheepdog.ngrok-free.app/api/order/notify/order
+  #支付成功后跳转地址,上线修改为上线任意地址
+  returnUrl: http://localhost:8000/account/center
+  private-key: MIIEvQIBAxxxxPxxxxSi6PcAZ3n7d5NgzhCB
+  ali-pay-public-key: MIIBIjxxx9GyId9IvZ1fxxxx
+dubbo:
+  application:
+    enable-file-cache: false
+    name: dubbo-springboot-demo-provider
+  protocol:
+    name: dubbo
+    port: -1
+  registry:
+    id: nacos-registry
+    # todo 线上可修改为远程服务器ip地址，参考nacos启动后的链接
+    address: nacos://nacos:8848
