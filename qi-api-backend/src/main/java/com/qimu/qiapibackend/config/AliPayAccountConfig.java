@@ -39,7 +39,7 @@ public class AliPayAccountConfig {
     /**
      * 是否使用沙箱
      */
-    private Boolean sandbox;
+    private Boolean sandbox = false;
 
     /**
      * 卖家id

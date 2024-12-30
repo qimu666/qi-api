@@ -50,13 +50,13 @@ mybatis-plus:
       logic-delete-field: isDelete # 全局逻辑删除的实体字段名(since 3.3.0,配置后可以忽略不配置步骤2)
       logic-delete-value: 1 # 逻辑已删除值(默认为 1)
       logic-not-delete-value: 0 # 逻辑未删除值(默认为 0)
-
-# Qi-API-SDK 配置，如需使用自己的网关host需修改
+# Qi-API-SDK 配置，自行搭建的修改为自己的网关host需修改
 qi:
   api:
     client:
       # 本地测试网关地址
       host: http://localhost:8090/api
+# todo 腾讯云cos文件上传配置
 cos:
   client:
     accessKey: xxxxxxx
@@ -64,28 +64,25 @@ cos:
     region: xxxxxxx
     bucket: xxxxxxx
     cos-host: https://xxxx.icu
-
 # 微信支付配置 todo
 wx:
   pay:
-    appId: wxxxxxxxxx67e8dc
-    mchId: 1x0xxxx68
-    apiV3Key: xxxxxbxxx3xxxx3xxx4
-#  是否沙箱环境
-    sandbox: false
+    appId: wx2exxxxdc
+    mchId: 16xxx24068
+    apiV3Key: bf3xx4
     privateKeyPath: classpath:/pem/apiclient_key.pem
     privateCertPath: classpath:/pem/apiclient_cert.pem
-# 本地测试用ngrok内网穿透，这个内网穿透地址，可以修改为自己的。上线修改为后端的接口地址即可
+    #本地测试用内网穿透，这个内网穿透地址，修改为自己的。上线修改为后端的接口地址即可
     notifyUrl: https://beloved-massive-sheepdog.ngrok-free.app/api/order/notify/order
-
-# 支付宝支付配置 todo
+    # 支付宝支付配置 todo
 alipay:
-  appId: 2xxxxxxxxxxx8
-  sellerId: 2xxxxxxxxxxxxx7
-#  是否沙箱环境
+  appId: 2019xxx41568
+  sellerId: 20xxx90687
+  #是否沙箱环境
   sandbox: false
-# 本地测试用ngrok内网穿透，这个内网穿透地址，可以修改为自己的。上线修改为后端的接口地址即可
+  #本地测试用内网穿透，这个内网穿透地址，修改为自己的。上线修改为后端的接口地址即可
   notifyUrl: https://beloved-massive-sheepdog.ngrok-free.app/api/order/notify/order
+  #支付成功后跳转地址,上线修改为上线任意地址
   returnUrl: http://localhost:8000/account/center
   private-key: xxxxxxxxxx
   ali-pay-public-key: xxxxxxxxxxxxxxxx
@@ -99,5 +96,5 @@ dubbo:
     port: -1
   registry:
     id: nacos-registry
-# todo 线上修改为服务器内网地址，参考nacos启动后的链接
+    # todo 线上修改为服务器内网地址，参考nacos启动后的链接
     address: nacos://localhost:8848
