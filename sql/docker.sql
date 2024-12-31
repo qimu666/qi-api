@@ -30,6 +30,8 @@ create table if not exists qi_api.user
 )
     comment '用户';
 
+INSERT INTO qi_api.user (userName, userAccount, userAvatar, email, gender, userRole, userPassword, accessKey, secretKey, balance, invitationCode, status, createTime, updateTime, isDelete) VALUES ('admin', 'admin', null, null, null, 'admin', '89c7f39d98fb169ffea0698c18831fe1', 'd09ec44b569662fde8d3ce82218e7425', 'baffdfb8d54015c0fb5ecd2dc51b97c0', 30, 'edRhWH9p', 0, '2024-12-31 11:29:35', '2024-12-31 11:30:02', 0);
+
 -- 每日签到表
 create table if not exists qi_api.daily_check_in
 (

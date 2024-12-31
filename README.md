@@ -92,6 +92,8 @@ yarn build or npm run build
 
 ### 后端
 
+管理员初始账号密码：admin/12345678
+
 1. docker-compose容器编排一键启动
 
    - 修改配置文件，修改配置部分已标记todo标签。无需特殊情况只需关注两个配置文件（已配置好不修改也可以直接运行）
@@ -173,6 +175,31 @@ yarn build or npm run build
 |                    用户管理、封号解封等                     | ❌ | ❌ | ✅ |
 |                接口管理、接口发布审核、下架                 | ❌ | ❌ | ✅ |
 |                            退款                             | ❌ | ❌| ❌ |
+
+## 新接口动态发布示例（只需两步即可发布）
+
+1. 在接口服务(interface)项目中开发新接口 （**接口服务可以是独立的项目，但需要在网关中配置路由**）
+
+   在接口服务开发一个测试接口：
+
+   ```java
+    @GetMapping("/test")
+       public String test(String text) {
+           return text;
+   }
+   ```
+
+   ![image-20241231114908610](https://img.qimuu.icu/typory/image-20241231114908610.png)
+
+2. 开发完成后重启接口项目后，在管理员后台发布接口，就可以在线调用了！！
+
+   ![image-20241231115154224](https://img.qimuu.icu/typory/image-20241231115154224.png)
+
+   3. 在接口大厅找到并请求接口
+
+      ![image-20241231115407585](https://img.qimuu.icu/typory/image-20241231115407585.png)
+
+   4. 恭喜发布成功！！
 
 ## 功能展示 ✨
 

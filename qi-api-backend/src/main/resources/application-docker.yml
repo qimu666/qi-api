@@ -53,7 +53,7 @@ qi:
   api:
     client:
       # todo docker容器编排网关服务地址，如已部署在线网关，可以修改为在线网关地址，同时修改数据库接口地址前缀
-      host: http://qi-api-gateway:8090/api/api
+      host: http://qi-api-gateway:8090/api
 # 腾讯云cos文件上传配置 todo
 cos:
   client:
