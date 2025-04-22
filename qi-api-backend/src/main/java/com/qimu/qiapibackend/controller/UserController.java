@@ -345,6 +345,7 @@ public class UserController {
      * @return {@link BaseResponse}<{@link List}<{@link UserVO}>>
      */
     @GetMapping("/list")
+    @AuthCheck(mustRole = ADMIN_ROLE)
     public BaseResponse<List<UserVO>> listUser(UserQueryRequest userQueryRequest, HttpServletRequest request) {
         if (null == userQueryRequest) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -370,6 +371,7 @@ public class UserController {
      * @return {@link BaseResponse}<{@link Page}<{@link UserVO}>>
      */
     @GetMapping("/list/page")
+    @AuthCheck(mustRole = ADMIN_ROLE)
     public BaseResponse<Page<UserVO>> listUserByPage(UserQueryRequest userQueryRequest, HttpServletRequest request) {
         User userQuery = new User();
         if (userQueryRequest == null) {
