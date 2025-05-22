@@ -211,27 +211,8 @@ public class InterfaceInfoController {
      * @return {@link BaseResponse}<{@link List}<{@link InterfaceInfo}>>
      */
     @AuthCheck(mustRole = ADMIN_ROLE)
-    @GetMapping("/list")
-    public BaseResponse<List<InterfaceInfo>> listInterfaceInfo(InterfaceInfoQueryRequest interfaceInfoQueryRequest) {
-        if (interfaceInfoQueryRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        InterfaceInfo interfaceInfoQuery = new InterfaceInfo();
-        BeanUtils.copyProperties(interfaceInfoQueryRequest, interfaceInfoQuery);
-
-        QueryWrapper<InterfaceInfo> queryWrapper = new QueryWrapper<>(interfaceInfoQuery);
-        List<InterfaceInfo> interfaceInfoList = interfaceInfoService.list(queryWrapper);
-        return ResultUtils.success(interfaceInfoList);
-    }
-
-    /**
-     * 分页获取列表
-     * @param interfaceInfoQueryRequest 接口信息查询请求
-     * @param request                   请求
-     * @return {@link BaseResponse}<{@link Page}<{@link InterfaceInfo}>>
-     */
-    @GetMapping("/list/page")
-    public BaseResponse<Page<InterfaceInfo>> listInterfaceInfoByPage(InterfaceInfoQueryRequest interfaceInfoQueryRequest, HttpServletRequest request) {
+    @PostMapping("/list")
+    public BaseResponse<Page<InterfaceInfo>> listInterfaceInfo(@RequestBody InterfaceInfoQueryRequest interfaceInfoQueryRequest) {
         if (interfaceInfoQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -267,13 +248,42 @@ public class InterfaceInfoController {
                 .eq(ObjectUtils.isNotEmpty(reduceScore), "reduceScore", reduceScore);
         queryWrapper.orderBy(StringUtils.isNotBlank(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
         Page<InterfaceInfo> interfaceInfoPage = interfaceInfoService.page(new Page<>(current, size), queryWrapper);
-        User user = userService.isTourist(request);
-        // 不是管理员只能查看已经上线的
-        if (user == null || !user.getUserRole().equals(ADMIN_ROLE)) {
-            List<InterfaceInfo> interfaceInfoList = interfaceInfoPage.getRecords().stream()
-                    .filter(interfaceInfo -> interfaceInfo.getStatus().equals(InterfaceStatusEnum.ONLINE.getValue())).collect(Collectors.toList());
-            interfaceInfoPage.setRecords(interfaceInfoList);
+        return ResultUtils.success(interfaceInfoPage);
+    }
+
+    /**
+     * 分页获取列表
+     * @param interfaceInfoQueryRequest 接口信息查询请求
+     * @param request                   请求
+     * @return {@link BaseResponse}<{@link Page}<{@link InterfaceInfo}>>
+     */
+    @PostMapping("/list/page")
+    public BaseResponse<Page<InterfaceInfo>> listInterfaceInfoByPage(@RequestBody InterfaceInfoQueryRequest interfaceInfoQueryRequest, HttpServletRequest request) {
+        if (interfaceInfoQueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+
+        InterfaceInfo interfaceInfoQuery = new InterfaceInfo();
+        BeanUtils.copyProperties(interfaceInfoQueryRequest, interfaceInfoQuery);
+        long size = interfaceInfoQueryRequest.getPageSize();
+        String sortField = interfaceInfoQueryRequest.getSortField();
+        String sortOrder = interfaceInfoQueryRequest.getSortOrder();
+
+        String name = interfaceInfoQueryRequest.getName();
+        long current = interfaceInfoQueryRequest.getCurrent();
+        String description = interfaceInfoQueryRequest.getDescription();
+        // 限制爬虫
+        if (size > 50) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        QueryWrapper<InterfaceInfo> queryWrapper = new QueryWrapper<>();
+        if (StringUtils.isNotBlank(name) && StringUtils.isNotBlank(description)) {
+            queryWrapper.and(qw -> qw.like("name", name).or()
+                    .like("description", description));
+        }
+        queryWrapper.eq("status", 1);
+        queryWrapper.orderBy(StringUtils.isNotBlank(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
+        Page<InterfaceInfo> interfaceInfoPage = interfaceInfoService.page(new Page<>(current, size), queryWrapper);
         return ResultUtils.success(interfaceInfoPage);
     }
 
@@ -284,8 +294,8 @@ public class InterfaceInfoController {
      * @param request                   请求
      * @return {@link BaseResponse}<{@link Page}<{@link InterfaceInfo}>>
      */
-    @GetMapping("/get/searchText")
-    public BaseResponse<Page<InterfaceInfo>> listInterfaceInfoBySearchTextPage(InterfaceInfoSearchTextRequest interfaceInfoQueryRequest, HttpServletRequest request) {
+    @PostMapping("/get/searchText")
+    public BaseResponse<Page<InterfaceInfo>> listInterfaceInfoBySearchTextPage(@RequestBody InterfaceInfoSearchTextRequest interfaceInfoQueryRequest, HttpServletRequest request) {
         if (interfaceInfoQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -304,14 +314,9 @@ public class InterfaceInfoController {
                     .or()
                     .like(StringUtils.isNotBlank(searchText), "description", searchText));
         }
+        queryWrapper.eq("status", 1);
         queryWrapper.orderBy(StringUtils.isNotBlank(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
         Page<InterfaceInfo> interfaceInfoPage = interfaceInfoService.page(new Page<>(current, size), queryWrapper);
-        // 不是管理员只能查看已经上线的
-        if (!userService.isAdmin(request)) {
-            List<InterfaceInfo> interfaceInfoList = interfaceInfoPage.getRecords().stream()
-                    .filter(interfaceInfo -> interfaceInfo.getStatus().equals(InterfaceStatusEnum.ONLINE.getValue())).collect(Collectors.toList());
-            interfaceInfoPage.setRecords(interfaceInfoList);
-        }
         return ResultUtils.success(interfaceInfoPage);
     }
 
