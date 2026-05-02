@@ -10,7 +10,8 @@ ADD target/qi-api-gateway-0.0.1-SNAPSHOT.jar .
 ENV TZ=Asia/Shanghai
 
 EXPOSE 8090
+ENV SPRING_PROFILES_ACTIVE=docker
 
 # 启动命令
-ENTRYPOINT ["java","-jar","/app/qi-api-gateway-0.0.1-SNAPSHOT.jar","--spring.profiles.active=docker"]
+ENTRYPOINT ["java","-jar","/app/qi-api-gateway-0.0.1-SNAPSHOT.jar","--spring.profiles.active=${SPRING_PROFILES_ACTIVE}"]
 

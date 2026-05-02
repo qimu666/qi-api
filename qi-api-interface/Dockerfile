@@ -10,7 +10,8 @@ ADD target/qi-api-interface-0.0.1.jar .
 ENV TZ=Asia/Shanghai
 
 EXPOSE 8081
+ENV SPRING_PROFILES_ACTIVE=docker
 
 # 启动命令
-ENTRYPOINT ["java","-jar","/app/qi-api-interface-0.0.1.jar","--spring.profiles.active=prod"]
+ENTRYPOINT ["java","-jar","/app/qi-api-interface-0.0.1.jar","--spring.profiles.active=${SPRING_PROFILES_ACTIVE}"]
 
