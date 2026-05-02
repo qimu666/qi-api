@@ -5,6 +5,7 @@ services:
     environment:
       TZ: Asia/Shanghai
       SERVER_PORT: 7529
+      SPRING_PROFILES_ACTIVE: docker
     build:
       context: ./qi-api-backend
       dockerfile: Dockerfile
@@ -23,6 +24,7 @@ services:
     environment:
       TZ: Asia/Shanghai
       SERVER_PORT: 8090
+      SPRING_PROFILES_ACTIVE: docker
     build:
       context: ./qi-api-gateway
       dockerfile: Dockerfile
@@ -38,6 +40,7 @@ services:
     environment:
       TZ: Asia/Shanghai
       SERVER_PORT: 8081
+      SPRING_PROFILES_ACTIVE: docker
     build:
       context: ./qi-api-interface
       dockerfile: Dockerfile
